@@ -1,0 +1,6 @@
+scipy 
+xlsxwriter
+streamlit
+pandas
+numpy
+matplotlib
