@@ -66,7 +66,36 @@ uploaded_files = st.file_uploader("Upload Samples", type=['csv', 'xlsx', 'txt'],
 if uploaded_files:
     all_results = []
     fig_main = go.Figure()
-    
+    # --- Updated File Uploader ---
+uploaded_files = st.file_uploader(
+    "Upload Samples", 
+    type=['csv', 'xlsx', 'txt'],  # Added xlsx explicitly
+    accept_multiple_files=True
+)
+
+# --- Updated Smart Data Loader ---
+def smart_load(file):
+    try:
+        ext = file.name.split('.')[-1].lower()
+        if ext == 'xlsx':
+            # Specify engine='openpyxl' to ensure it uses the correct library
+            return pd.read_excel(file, engine='openpyxl')
+        
+        raw_bytes = file.getvalue()
+        content = raw_bytes.decode("utf-8", errors="ignore")
+        lines = content.splitlines()
+        start_row = 0
+        for i, line in enumerate(lines):
+            if len(re.findall(r"[-+]?\d*\.\d+|\d+", line)) >= 2:
+                start_row = i
+                break
+        sep = '\t' if '\t' in lines[start_row] else (',' if ',' in lines[start_row] else r'\s+')
+        df = pd.read_csv(io.StringIO("\n".join(lines[start_row:])), sep=sep, engine='python', on_bad_lines='skip')
+        df.columns = [str(c).strip() for c in df.columns]
+        return df
+    except Exception as e:
+        st.error(f"Error loading {file.name}: {e}")
+        return None
     # --- Bulk Update Logic ---
     st.subheader("🛠️ Sample Configuration & Modulus Validation")
     with st.expander("⚡ Bulk Update (Apply to All Samples)"):
