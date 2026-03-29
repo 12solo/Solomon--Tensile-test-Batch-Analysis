@@ -1,8 +1,8 @@
 streamlit
 pandas
 numpy
-matplotlib
 plotly
-xlsxwriter
 openpyxl
-requests
+xlsxwriter
+pillow
+streamlit-drawable-canvas
