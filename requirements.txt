@@ -2,8 +2,7 @@ streamlit
 pandas
 numpy
 matplotlib
-scipy
+plotly
 xlsxwriter
 openpyxl
 requests
-statsmodels
