@@ -36,19 +36,7 @@ with col_text:
     # A short, impactful tagline that frames the eco-research
     st.markdown("""
     **Analytical Framework for Bio-Composite Strain Behavior** 🚀
-    ---
-    *Characterizing Molecular Deformation from Raw Data*
     """)
-
-# --- 3. Creative Data Info Box ---
-# This info box uses high-contrast styling to look like a software readout
-st.info("""
-A high-fidelity analysis package engineered for the formal characterization of polymer deformation mechanics.
-Optimized for the PBAT/PLA 'premature termination' problem via advanced linear extrapolation of the drawing plateau.
-Bridges the gap between empirical lab data and theoretical failure.
-""")
-
-# (Continue your other calculations below)
 
 # --- 2. Sidebar: Professional Inputs ---
 st.sidebar.header("📝 Project Metadata")
