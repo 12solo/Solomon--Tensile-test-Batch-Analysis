@@ -5,10 +5,29 @@ import plotly.graph_objects as go
 import io
 import re
 
-# --- 1. Page Config ---
-st.set_page_config(page_title="Solomon Tensile Suite Pro", layout="wide")
+# --- 1. Page Configuration ---
+st.set_page_config(
+    page_title="Solomon Tensile Suite | Mechanical Characterization", 
+    page_icon="🔬",
+    layout="wide"
+)
+
+# --- 2. Professional Header & Technical Abstract ---
 st.title("Solomon Tensile Suite v3.4")
-st.info("Tensile test batch ananysis")
+st.subheader("Advanced Constitutive Analysis & Batch Processing Framework")
+
+st.markdown("""
+---
+**Technical Overview:** This analytical suite is engineered for the **high-fidelity characterization** of polymer deformation mechanics. 
+It provides automated workflows for extracting critical constitutive parameters from raw experimental data, 
+specifically optimized for **non-linear viscoelastic materials** and biodegradable poly-blends (PBAT/PLA).
+
+**Core Capabilities:**
+* **Toe-Region Compensation:** Automated zero-strain alignment via linear elastic extrapolation.
+* **Constitutive Metrics:** Calculation of Young’s Modulus ($E$), 0.2% Offset Yield Strength ($\sigma_y$), and Modulus of Toughness ($U_T$).
+* **Batch Normalization:** Statistical reduction of multi-specimen datasets to determine mean mechanical performance and variance.
+---
+""")
 
 # --- 2. Sidebar: Professional Inputs ---
 st.sidebar.header("📝 Project Metadata")
