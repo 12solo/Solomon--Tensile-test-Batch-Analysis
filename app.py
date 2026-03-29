@@ -70,21 +70,36 @@ if uploaded_files:
         else:
             df_full = df
 
-      # --- Research Calculations ---
-# Calculate energy using the trapezoidal rule (handles NumPy 1.x and 2.x)
-try:
-    energy_j = np.trapezoid(df_full[f_col], df_full[d_col] / 1000)
-except AttributeError:
-    energy_j = np.trapz(df_full[f_col], df_full[d_col] / 1000)
+    # --- Research Calculations ---
+        # Ensure these are indented exactly 8 spaces (or 2 tabs) from the left margin
+        df_full['Stress (MPa)'] = df_full[f_col] / area
+        df_full['Strain (%)'] = (df_full[d_col] / gauge_length) * 100
         
-        # Young's Modulus (E)
+        # 1. Young's Modulus (E) Calculation
         mask_e = (df_full['Strain (%)'] >= ym_start) & (df_full['Strain (%)'] <= ym_end)
-        E, _ = np.polyfit(df_full.loc[mask_e, 'Strain (%)'] / 100, df_full.loc[mask_e, 'Stress (MPa)'], 1)
+        if mask_e.any():
+            E, _ = np.polyfit(df_full.loc[mask_e, 'Strain (%)'] / 100, df_full.loc[mask_e, 'Stress (MPa)'], 1)
+        else:
+            E = 0
         
-        # Toughness (Energy per unit volume)
-        energy_j = np.trapz(df_full[f_col], df_full[d_col] / 1000)
+        # 2. Toughness Calculation (Handles NumPy 1.x and 2.x)
+        try:
+            energy_j = np.trapezoid(df_full[f_col], df_full[d_col] / 1000)
+        except AttributeError:
+            energy_j = np.trapz(df_full[f_col], df_full[d_col] / 1000)
+            
+        # Volume-normalized Toughness (MJ/m^3)
         volume_m3 = (area * gauge_length) * 1e-9
-        toughness = (energy_j / volume_m3) / 1e6 # MJ/m^3
+        toughness = (energy_j / volume_m3) / 1e6
+
+        # 3. Store results for the batch table
+        all_results.append({
+            "Sample": file.name,
+            "Modulus (MPa)": round(E, 2),
+            "UTS (MPa)": round(df_full['Stress (MPa)'].max(), 2),
+            "Elongation (%)": round(df_full['Strain (%)'].iloc[-1], 2),
+            "Toughness (MJ/m³)": round(toughness, 3)
+        })
 
         # Store results
         all_results.append({
