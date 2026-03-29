@@ -4,41 +4,29 @@ import numpy as np
 import plotly.graph_objects as go
 import io
 import re
-
-import streamlit as st
-import io
 import requests
 
 # --- 1. Page Configuration ---
 st.set_page_config(page_title="Solomon Tensile Suite", layout="wide")
 
 # --- 2. Professional Logo & Header ---
-# High-quality URL to the Solomon logo
 logo_url = "https://raw.githubusercontent.com/12solo/Tensile-test-extrapolator/main/logo%20s.png"
 
-# Setup the two-column header
 col_logo, col_text = st.columns([1, 5])
 
-# Column 1: The Logo Art
 with col_logo:
     try:
-        # professional scale and padding
         st.image(logo_url, width=150) 
     except:
-        # Fallback if image fails, a clean scientific icon
         st.header("🔬")
 
-# Column 2: Creative Title & Subtle Branding
 with col_text:
-    # A powerful, bold title
     st.title("Solomon Tensile Suite 2")
-    
-    # A short, impactful tagline that frames the eco-research
     st.markdown("""
     **Analytical Framework for Bio-Composite Strain Behavior** 🚀
     """)
 
-# --- 2. Sidebar: Professional Inputs ---
+# --- 3. Sidebar: Professional Inputs ---
 st.sidebar.header("📝 Project Metadata")
 project_name = st.sidebar.text_input("Research Topic", "PBAT-PLA-Biocomposites")
 
@@ -49,7 +37,6 @@ gauge_length = st.sidebar.number_input("Initial Gauge Length (L0) [mm]", value=2
 area = width * thickness 
 
 st.sidebar.header("⚙️ Data Calibration")
-# Critical for your 1120% error:
 unit_input = st.sidebar.selectbox("Raw Displacement Unit", ["Millimeters (mm)", "Micrometers (um)", "Meters (m)"])
 scale_map = {"Millimeters (mm)": 1.0, "Micrometers (um)": 0.001, "Meters (m)": 1000.0}
 u_scale = scale_map[unit_input]
@@ -57,13 +44,12 @@ u_scale = scale_map[unit_input]
 apply_zeroing = st.sidebar.checkbox("Apply Toe-Compensation (Shift to 0,0)", value=True)
 ym_range = st.sidebar.slider("Modulus Fit Range (%)", 0.0, 10.0, (0.2, 1.0))
 
-# --- 3. Robust Data Loader ---
+# --- 4. Robust Data Loader ---
 def smart_load(file):
     try:
         raw_bytes = file.getvalue()
         content = raw_bytes.decode("utf-8", errors="ignore")
         lines = content.splitlines()
-        # Find first line with at least 2 numbers
         start_row = 0
         for i, line in enumerate(lines):
             if len(re.findall(r"[-+]?\d*\.\d+|\d+", line)) >= 2:
@@ -75,18 +61,18 @@ def smart_load(file):
         return df
     except: return None
 
-# --- 4. Main Engine ---
+# --- 5. Main Engine ---
 uploaded_files = st.file_uploader("Upload Samples", type=['csv', 'xlsx', 'txt'], accept_multiple_files=True)
 
 if uploaded_files:
     all_results = []
-    fig = go.Figure()
+    fig_main = go.Figure()
+    fig_modulus = go.Figure() # The Modulus Fit Preview Plot
 
     for file in uploaded_files:
         df = smart_load(file)
         if df is None or df.empty: continue
         
-        # Manual Column Assignment (fallback to first two if keywords fail)
         cols = df.columns.tolist()
         f_col = st.sidebar.selectbox(f"Force Col ({file.name})", cols, index=0, key=f"f_{file.name}")
         d_col = st.sidebar.selectbox(f"Disp Col ({file.name})", cols, index=1, key=f"d_{file.name}")
@@ -100,7 +86,7 @@ if uploaded_files:
         stress_raw = df[f_col].values / area
         strain_raw = (disp_mm / gauge_length) * 100
         
-        # 2. Modulus Calculation (Slope of elastic region)
+        # 2. Modulus Calculation
         mask_e = (strain_raw >= ym_range[0]) & (strain_raw <= ym_range[1])
         if np.sum(mask_e) < 3:
             st.warning(f"⚠️ {file.name}: Incomplete data in {ym_range}% range. Check units.")
@@ -108,7 +94,7 @@ if uploaded_files:
             
         E_slope, intercept_y = np.polyfit(strain_raw[mask_e], stress_raw[mask_e], 1)
         
-        # 3. Toe-Compensation (Shift X-axis)
+        # 3. Toe-Compensation
         if apply_zeroing:
             shift = -intercept_y / E_slope
             strain = strain_raw - shift
@@ -119,17 +105,16 @@ if uploaded_files:
             strain, stress = strain_raw, stress_raw
             f_final, d_final = df[f_col].values, disp_mm
 
-        # 4. 0.2% Offset Yield (Standard for Polymers)
+        # 4. 0.2% Offset Yield
         offset_line = E_slope * (strain - 0.2)
         idx_yield = np.where((stress - offset_line) < 0)[0]
         y_stress = stress[idx_yield[0]] if len(idx_yield) > 0 else np.nan
         y_strain = strain[idx_yield[0]] if len(idx_yield) > 0 else np.nan
 
-        # 5. Energy (Work Done) & Toughness
+        # 5. Energy & Toughness
         try: work_j = np.trapezoid(f_final, d_final / 1000.0)
         except: work_j = np.trapz(f_final, d_final / 1000.0)
         
-        # Toughness in MJ/m3 (Energy / Volume)
         toughness = (work_j / ((area * gauge_length) * 1e-9)) / 1e6
 
         all_results.append({
@@ -143,19 +128,37 @@ if uploaded_files:
             "Toughness [MJ/m³]": round(toughness, 3)
         })
 
-        fig.add_trace(go.Scatter(x=strain, y=stress, name=file.name))
+        # Add traces to plots
+        fig_main.add_trace(go.Scatter(x=strain, y=stress, name=file.name))
+        
+        # Add to Modulus Fit Preview (Elastic Region)
+        fig_modulus.add_trace(go.Scatter(x=strain, y=stress, name=f"{file.name} Data", opacity=0.5))
+        
+        # Create fit line for preview
+        fit_x = np.linspace(0, ym_range[1] * 1.5, 20)
+        fit_y = E_slope * fit_x + (0 if apply_zeroing else intercept_y)
+        fig_modulus.add_trace(go.Scatter(x=fit_x, y=fit_y, name=f"{file.name} Fit", line=dict(dash='dot')))
 
-    # --- 5. Reporting Dashboard ---
-    # ADDED AXIS NAMES HERE
-    fig.update_layout(
-        xaxis_title="Strain (%)",
-        yaxis_title="Stress (MPa)",
-        template="plotly_white",
-        hovermode="x unified"
-    )
-    
-    st.plotly_chart(fig, use_container_width=True)
-    
+    # --- 6. Reporting Dashboard ---
+    col_plot, col_zoom = st.columns([2, 1])
+
+    with col_plot:
+        st.subheader("Full Stress-Strain Comparison")
+        fig_main.update_layout(
+            xaxis_title="Strain (%)", yaxis_title="Stress (MPa)",
+            template="plotly_white", hovermode="x unified"
+        )
+        st.plotly_chart(fig_main, use_container_width=True)
+
+    with col_zoom:
+        st.subheader("🔍 Modulus Fit Preview")
+        fig_modulus.update_layout(
+            xaxis_title="Strain (%)", yaxis_title="Stress (MPa)",
+            xaxis_range=[0, ym_range[1] * 2], # Zoomed into elastic region
+            template="plotly_white", showlegend=False
+        )
+        st.plotly_chart(fig_modulus, use_container_width=True)
+
     if all_results:
         res_df = pd.DataFrame(all_results)
         st.subheader("📊 Batch Summary Statistics")
