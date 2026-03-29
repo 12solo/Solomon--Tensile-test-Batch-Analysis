@@ -66,112 +66,107 @@ uploaded_files = st.file_uploader("Upload Samples", type=['csv', 'xlsx', 'txt'],
 if uploaded_files:
     all_results = []
     fig_main = go.Figure()
-    fig_modulus = go.Figure() 
-
-    # Dynamic Sample Configuration Area
-    st.subheader("🛠️ Individual Sample Configuration")
-    sample_configs = {}
     
-    # Create an expander for each file to adjust its specific modulus range
-    for file in uploaded_files:
-        with st.expander(f"Adjust Modulus Fit for {file.name}", expanded=False):
-            sample_configs[file.name] = st.slider(
-                f"Modulus Fit Range (%) for {file.name}", 
-                0.0, 10.0, (0.2, 1.0), key=f"range_{file.name}"
-            )
+    # --- Bulk Update Logic ---
+    st.subheader("🛠️ Sample Configuration & Modulus Validation")
+    with st.expander("⚡ Bulk Update (Apply to All Samples)"):
+        b1, b2 = st.columns([3, 1])
+        bulk_range = b1.slider("Select Global Modulus Range (%)", 0.0, 10.0, (0.2, 1.0))
+        if b2.button("Apply to All"):
+            for file in uploaded_files:
+                st.session_state[f"range_{file.name}"] = bulk_range
+            st.rerun()
+
+    sample_configs = {}
 
     for file in uploaded_files:
         df = smart_load(file)
         if df is None or df.empty: continue
         
+        # 1. Engineering Conversion (Pre-process for the mini-plot)
         cols = df.columns.tolist()
-        f_col = st.sidebar.selectbox(f"Force Col ({file.name})", cols, index=0, key=f"f_{file.name}")
-        d_col = st.sidebar.selectbox(f"Disp Col ({file.name})", cols, index=1, key=f"d_{file.name}")
+        f_col_key = f"f_{file.name}"
+        d_col_key = f"d_{file.name}"
         
-        df[f_col] = pd.to_numeric(df[f_col], errors='coerce')
-        df[d_col] = pd.to_numeric(df[d_col], errors='coerce')
-        df = df.dropna(subset=[f_col, d_col])
-
-        # 1. Engineering Conversion
-        disp_mm = df[d_col].values * u_scale
-        stress_raw = df[f_col].values / area
+        f_col = st.sidebar.selectbox(f"Force Col ({file.name})", cols, index=0, key=f_col_key)
+        d_col = st.sidebar.selectbox(f"Disp Col ({file.name})", cols, index=1, key=d_col_key)
+        
+        df_clean = df[[f_col, d_col]].apply(pd.to_numeric, errors='coerce').dropna()
+        disp_mm = df_clean[d_col].values * u_scale
+        stress_raw = df_clean[f_col].values / area
         strain_raw = (disp_mm / gauge_length) * 100
-        
-        # 2. Per-Sample Modulus Calculation
-        current_range = sample_configs[file.name]
-        mask_e = (strain_raw >= current_range[0]) & (strain_raw <= current_range[1])
-        
-        if np.sum(mask_e) < 3:
-            st.warning(f"⚠️ {file.name}: Incomplete data in {current_range}% range. Check units.")
-            continue
+
+        # --- Dynamic Per-Sample UI with Integrated Preview ---
+        with st.expander(f"Adjust & Preview: {file.name}", expanded=False):
+            ctrl_col, prev_col = st.columns([1, 2])
             
-        E_slope, intercept_y = np.polyfit(strain_raw[mask_e], stress_raw[mask_e], 1)
-        
-        # 3. Toe-Compensation
-        if apply_zeroing:
-            shift = -intercept_y / E_slope
-            strain = strain_raw - shift
-            mask_pos = strain >= 0
-            strain, stress = strain[mask_pos], stress_raw[mask_pos]
-            f_final, d_final = df[f_col].values[mask_pos], disp_mm[mask_pos]
-        else:
-            strain, stress = strain_raw, stress_raw
-            f_final, d_final = df[f_col].values, disp_mm
+            # Controls
+            current_range = ctrl_col.slider(
+                "Modulus Fit Range (%)", 0.0, 10.0, (0.2, 1.0), key=f"range_{file.name}"
+            )
+            sample_configs[file.name] = current_range
+            
+            # Calculations for current sample
+            mask_e = (strain_raw >= current_range[0]) & (strain_raw <= current_range[1])
+            if np.sum(mask_e) >= 3:
+                E_slope, intercept_y = np.polyfit(strain_raw[mask_e], stress_raw[mask_e], 1)
+                
+                # Toe-Compensation for plotting
+                if apply_zeroing:
+                    shift = -intercept_y / E_slope
+                    strain_plot = strain_raw - shift
+                    stress_plot = stress_raw[strain_plot >= 0]
+                    strain_plot = strain_plot[strain_plot >= 0]
+                else:
+                    strain_plot, stress_plot = strain_raw, stress_raw
 
-        # 4. 0.2% Offset Yield
-        offset_line = E_slope * (strain - 0.2)
-        idx_yield = np.where((stress - offset_line) < 0)[0]
-        y_stress = stress[idx_yield[0]] if len(idx_yield) > 0 else np.nan
-        y_strain = strain[idx_yield[0]] if len(idx_yield) > 0 else np.nan
+                # Mini Preview Plot
+                fig_mini = go.Figure()
+                fig_mini.add_trace(go.Scatter(x=strain_plot, y=stress_plot, name="Data", line=dict(color='teal')))
+                
+                fit_x = np.linspace(0, current_range[1] * 2, 20)
+                fit_y = E_slope * fit_x + (0 if apply_zeroing else intercept_y)
+                fig_mini.add_trace(go.Scatter(x=fit_x, y=fit_y, name="Fit", line=dict(dash='dot', color='red')))
+                
+                fig_mini.update_layout(
+                    height=250, margin=dict(l=0, r=0, t=0, b=0),
+                    xaxis_title="Strain (%)", yaxis_title="Stress (MPa)",
+                    xaxis_range=[0, current_range[1] * 2.5], template="plotly_white", showlegend=False
+                )
+                prev_col.plotly_chart(fig_mini, use_container_width=True)
 
-        # 5. Energy & Toughness
-        try: work_j = np.trapezoid(f_final, d_final / 1000.0)
-        except: work_j = np.trapz(f_final, d_final / 1000.0)
-        
-        toughness = (work_j / ((area * gauge_length) * 1e-9)) / 1e6
+                # Final Metrics for results table
+                offset_line = E_slope * (strain_plot - 0.2)
+                idx_yield = np.where((stress_plot - offset_line) < 0)[0]
+                y_stress = stress_plot[idx_yield[0]] if len(idx_yield) > 0 else np.nan
+                y_strain = strain_plot[idx_yield[0]] if len(idx_yield) > 0 else np.nan
+                
+                try: work_j = np.trapezoid(df_clean[f_col].values, disp_mm / 1000.0)
+                except: work_j = np.trapz(df_clean[f_col].values, disp_mm / 1000.0)
+                
+                all_results.append({
+                    "Sample": file.name,
+                    "Modulus (E) [MPa]": round(E_slope * 100, 1),
+                    "Yield Stress [MPa]": round(y_stress, 2),
+                    "Yield Strain [%]": round(y_strain, 2),
+                    "Stress @ Break [MPa]": round(stress_plot[-1], 2),
+                    "Strain @ Break [%]": round(strain_plot[-1], 2),
+                    "Work Done [J]": round(work_j, 4),
+                    "Toughness [MJ/m³]": round((work_j / (area * gauge_length * 1e-9)) / 1e6, 3)
+                })
+                
+                fig_main.add_trace(go.Scatter(x=strain_plot, y=stress_plot, name=file.name))
+            else:
+                ctrl_col.error("Insufficient points in range.")
 
-        all_results.append({
-            "Sample": file.name,
-            "Modulus (E) [MPa]": round(E_slope * 100, 1),
-            "Yield Stress [MPa]": round(y_stress, 2),
-            "Yield Strain [%]": round(y_strain, 2),
-            "Stress @ Break [MPa]": round(stress[-1], 2),
-            "Strain @ Break [%]": round(strain[-1], 2),
-            "Work Done [J]": round(work_j, 4),
-            "Toughness [MJ/m³]": round(toughness, 3)
-        })
-
-        # Add traces to plots
-        fig_main.add_trace(go.Scatter(x=strain, y=stress, name=file.name))
-        
-        # Add to Modulus Fit Preview (Elastic Region)
-        fig_modulus.add_trace(go.Scatter(x=strain, y=stress, name=f"{file.name} Data", opacity=0.5))
-        
-        # Create fit line for preview
-        fit_x = np.linspace(0, current_range[1] * 1.5, 20)
-        fit_y = E_slope * fit_x + (0 if apply_zeroing else intercept_y)
-        fig_modulus.add_trace(go.Scatter(x=fit_x, y=fit_y, name=f"{file.name} Fit", line=dict(dash='dot')))
-
-    # --- 6. Reporting Dashboard ---
-    col_plot, col_zoom = st.columns([2, 1])
-
-    with col_plot:
-        st.subheader("Full Stress-Strain Comparison")
-        fig_main.update_layout(
-            xaxis_title="Strain (%)", yaxis_title="Stress (MPa)",
-            template="plotly_white", hovermode="x unified"
-        )
-        st.plotly_chart(fig_main, use_container_width=True)
-
-    with col_zoom:
-        st.subheader("🔍 Modulus Fit Preview")
-        fig_modulus.update_layout(
-            xaxis_title="Strain (%)", yaxis_title="Stress (MPa)",
-            # Dynamic zoom based on the largest selected range
-            xaxis_range=[0, max([v[1] for v in sample_configs.values()]) * 2], 
-            template="plotly_white", showlegend=False
-        )
-        st.plotly_chart(fig_modulus, use_container_width=True)
+    # --- 6. Final Reporting Dashboard ---
+    st.divider()
+    st.subheader("Global Stress-Strain Comparison")
+    fig_main.update_layout(
+        xaxis_title="Strain (%)", yaxis_title="Stress (MPa)",
+        template="plotly_white", hovermode="x unified"
+    )
+    st.plotly_chart(fig_main, use_container_width=True)
 
     if all_results:
         res_df = pd.DataFrame(all_results)
