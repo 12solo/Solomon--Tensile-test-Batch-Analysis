@@ -7,8 +7,8 @@ import re
 
 # --- 1. Page Config ---
 st.set_page_config(page_title="Solomon Tensile Suite Pro", layout="wide")
-st.title("Solomon Tensile Suite v2.7")
-st.caption("Advanced Header Parsing & Unit Scaling for .txt Files")
+st.title("Solomon Tensile Suite v2.8")
+st.caption("Auto-Unit Scaling & Professional Batch Analysis")
 
 # --- 2. Sidebar ---
 st.sidebar.header("📏 Specimen Geometry")
@@ -18,41 +18,30 @@ gauge_length = st.sidebar.number_input("Gauge Length (mm)", value=25.0)
 area = width * thickness 
 
 st.sidebar.header("⚙️ Analysis Settings")
-ym_start = st.sidebar.slider("Modulus Start Strain (%)", 0.0, 5.0, 0.2, 0.1)
-ym_end = st.sidebar.slider("Modulus End Strain (%)", 0.1, 10.0, 1.0, 0.1)
+apply_zeroing = st.sidebar.checkbox("Apply Toe-Compensation", value=True)
+ym_start = st.sidebar.slider("Modulus Start Strain (%)", 0.0, 5.0, 0.2)
+ym_end = st.sidebar.slider("Modulus End Strain (%)", 0.1, 20.0, 1.0)
 
-# --- 3. Smart Data Loader ---
+# --- 3. Robust Data Loader ---
 def smart_load(file):
-    ext = file.name.split('.')[-1].lower()
     try:
-        if ext in ['xlsx', 'xls']:
-            return pd.read_excel(file)
-        
-        # For CSV and TXT: Read raw lines to find where data starts
         raw_bytes = file.getvalue()
         content = raw_bytes.decode("utf-8", errors="ignore")
         lines = content.splitlines()
         
-        # Find the first line that looks like data (contains multiple numbers)
+        # Skip headers until numeric data block starts
         start_row = 0
         for i, line in enumerate(lines):
-            # Check if line has at least 2 numbers separated by tab/comma/space
             nums = re.findall(r"[-+]?\d*\.\d+|\d+", line)
             if len(nums) >= 2:
                 start_row = i
                 break
         
         sep = '\t' if '\t' in lines[start_row] else (',' if ',' in lines[start_row] else r'\s+')
-        
-        # Reload only the data part
         df = pd.read_csv(io.StringIO("\n".join(lines[start_row:])), sep=sep, engine='python', on_bad_lines='skip')
-        
-        # Clean column names
         df.columns = [str(c).strip() for c in df.columns]
         return df
-    except Exception as e:
-        st.error(f"Fail: {file.name} -> {e}")
-        return None
+    except: return None
 
 # --- 4. Main Engine ---
 uploaded_files = st.file_uploader("Upload Samples", type=['csv', 'xlsx', 'txt'], accept_multiple_files=True)
@@ -65,38 +54,58 @@ if uploaded_files:
         df = smart_load(file)
         if df is None or df.empty: continue
         
-        # Identify Columns by Keyword or Index
+        # Auto-detect Force and Displacement columns
         cols = df.columns.tolist()
         f_col = next((c for c in cols if any(k in c.lower() for k in ['load', 'force', 'n'])), cols[0])
-        d_col = next((c for c in cols if any(k in c.lower() for k in ['ext', 'disp', 'mm', 'dist'])), cols[1])
+        d_col = next((c for c in cols if any(k in c.lower() for k in ['ext', 'disp', 'mm', 'dist', 'pos'])), cols[1])
         
         df[f_col] = pd.to_numeric(df[f_col], errors='coerce')
         df[d_col] = pd.to_numeric(df[d_col], errors='coerce')
         df = df.dropna(subset=[f_col, d_col])
 
-        # UNIT SCALING: Check if displacement is in meters (very small values)
-        if df[d_col].max() < 0.1 and df[d_col].max() > 0:
-            df[d_col] = df[d_col] * 1000  # Convert m to mm
-            st.info(f"💡 {file.name}: Converted Displacement from meters to mm.")
-
-        # Calculations
-        stress = df[f_col] / area
-        strain = (df[d_col] / gauge_length) * 100
+        # --- SMART UNIT SCALING ---
+        # If max displacement is huge (e.g. 1120), it's likely already % strain or micrometers
+        raw_disp = df[d_col].values
         
-        # Validating Range
+        # Logic: If raw displacement / gauge_length * 100 > 5000%, the unit is wrong.
+        test_strain = (raw_disp / gauge_length) * 100
+        if test_strain.max() > 2000:
+            # Case A: Data was actually in micrometers
+            strain = (raw_disp / 1000) / gauge_length * 100
+            st.info(f"⚡ {file.name}: Scaling displacement from µm to mm.")
+        elif raw_disp.max() > 100 and gauge_length < 50:
+            # Case B: The column was already 'Strain %'
+            strain = raw_disp
+            st.info(f"⚡ {file.name}: Using column 2 as direct Strain %.")
+        else:
+            strain = test_strain
+        
+        stress = df[f_col] / area
+
+        # --- Toe-Compensation & Yield ---
         mask_e = (strain >= ym_start) & (strain <= ym_end)
         
-        if np.sum(mask_e) < 5:
-            st.error(f"❌ {file.name}: Range Error. Max Strain is {strain.max():.2f}%. Adjust sliders.")
-            fig.add_trace(go.Scatter(x=strain, y=stress, name=f"ERR: {file.name}"))
+        if np.sum(mask_e) < 3:
+            st.error(f"❌ {file.name}: Range mismatch. Strain found: 0 to {strain.max():.1f}%. Adjust sliders.")
             continue
 
-        # Modulus Fit
-        E_slope, inter = np.polyfit(strain[mask_e], stress[mask_e], 1)
+        E_slope, intercept_y = np.polyfit(strain[mask_e], stress[mask_e], 1)
         
+        if apply_zeroing:
+            shift = -intercept_y / E_slope
+            strain = strain - shift
+            mask_pos = strain >= 0
+            strain, stress = strain[mask_pos], stress[mask_pos]
+
+        # 0.2% Offset Yield
+        offset_line = E_slope * (strain - 0.2)
+        idx_yield = np.where((stress - offset_line) < 0)[0]
+        y_stress = stress.iloc[idx_yield[0]] if len(idx_yield) > 0 else np.nan
+
         all_results.append({
             "Sample": file.name,
             "Modulus (MPa)": round(E_slope * 100, 1),
+            "Yield (MPa)": round(y_stress, 2),
             "UTS (MPa)": round(stress.max(), 2),
             "Elongation (%)": round(strain.iloc[-1], 2)
         })
@@ -105,4 +114,7 @@ if uploaded_files:
 
     st.plotly_chart(fig, use_container_width=True)
     if all_results:
-        st.dataframe(pd.DataFrame(all_results))
+        res_df = pd.DataFrame(all_results)
+        st.subheader("📊 Batch Metrics")
+        st.table(res_df.drop(columns='Sample').agg(['mean', 'std']).T)
+        st.dataframe(res_df)
