@@ -173,11 +173,29 @@ if uploaded_files:
                 fig_mini.update_layout(height=250, margin=dict(l=0, r=0, t=0, b=0), template="plotly_white", showlegend=False)
                 prev_col.plotly_chart(fig_mini, use_container_width=True)
 
+                # --- ADVANCED ANALYTICS ---
+                offset_line = E_slope * (strain_plot - 0.2)
+                idx_yield = np.where((stress_plot - offset_line) < 0)[0]
+                y_stress = stress_plot[idx_yield[0]] if len(idx_yield) > 0 else np.nan
+                y_strain = strain_plot[idx_yield[0]] if len(idx_yield) > 0 else np.nan
+                
+                # Energy Calculation (Trapezoidal)
+                f_final = stress_plot * area
+                d_final_m = (strain_plot / 100 * gauge_length) / 1000.0 # Deformation in meters
+                try: work_j = np.trapezoid(f_final, d_final_m)
+                except: work_j = np.trapz(f_final, d_final_m)
+                
+                toughness = (work_j / (area * gauge_length * 1e-9)) / 1e6 # MJ/m3
+
                 all_results.append({
                     "Sample": file.name, 
                     "Modulus (E) [MPa]": round(E_slope * 100, 1),
+                    "Yield Stress [MPa]": round(y_stress, 2),
+                    "Yield Strain [%]": round(y_strain, 2),
                     "Stress @ Peak [MPa]": round(stress_plot[-1], 2), 
-                    "Strain @ Peak [%]": round(strain_plot[-1], 2)
+                    "Strain @ Peak [%]": round(strain_plot[-1], 2),
+                    "Work Done [J]": round(work_j, 4),
+                    "Toughness [MJ/m³]": round(toughness, 3)
                 })
             else:
                 ctrl_col.error("Insufficient points.")
@@ -218,10 +236,9 @@ if uploaded_files:
             fig.savefig(img_buffer, format="tiff", dpi=300, bbox_inches='tight')
             st.download_button(label="🖼️ Download High-Res TIFF", data=img_buffer.getvalue(), file_name=f"{project_name}_Journal.tiff")
 
-        # --- 10. NEW: Batch Comparison Section ---
+        # --- 10. Batch Comparison Section (Extended) ---
         st.divider()
         st.subheader("⚖️ Batch Property Comparison")
-        
         col_comp1, col_comp2 = st.columns([1, 2])
         control_sample = col_comp1.selectbox("Select Control Sample (Baseline)", res_df["Sample"].tolist())
         
@@ -229,29 +246,35 @@ if uploaded_files:
             baseline = res_df[res_df["Sample"] == control_sample].iloc[0]
             comp_df = res_df.copy()
             
-            # Calculate % Differences relative to baseline
+            # Calculate % Differences
             comp_df["Modulus Δ (%)"] = ((comp_df["Modulus (E) [MPa]"] - baseline["Modulus (E) [MPa]"]) / baseline["Modulus (E) [MPa]"]) * 100
             comp_df["Strength Δ (%)"] = ((comp_df["Stress @ Peak [MPa]"] - baseline["Stress @ Peak [MPa]"]) / baseline["Stress @ Peak [MPa]"]) * 100
+            comp_df["Toughness Δ (%)"] = ((comp_df["Toughness [MJ/m³]"] - baseline["Toughness [MJ/m³]"]) / baseline["Toughness [MJ/m³]"]) * 100
             
-            # Formatting for display
             st.dataframe(
-                comp_df[["Sample", "Modulus (E) [MPa]", "Modulus Δ (%)", "Stress @ Peak [MPa]", "Strength Δ (%)"]].style.format({
+                comp_df[["Sample", "Modulus (E) [MPa]", "Modulus Δ (%)", "Stress @ Peak [MPa]", "Strength Δ (%)", "Toughness [MJ/m³]", "Toughness Δ (%)"]].style.format({
                     "Modulus Δ (%)": "{:+.1f}%",
-                    "Strength Δ (%)": "{:+.1f}%"
-                }).background_gradient(subset=["Modulus Δ (%)", "Strength Δ (%)"], cmap="RdYlGn"),
+                    "Strength Δ (%)": "{:+.1f}%",
+                    "Toughness Δ (%)": "{:+.1f}%"
+                }).background_gradient(subset=["Modulus Δ (%)", "Strength Δ (%)", "Toughness Δ (%)"], cmap="RdYlGn"),
                 hide_index=True, use_container_width=True
             )
 
-        # --- 11. Individual Results & Summary ---
+        # --- 11. Full Table Display (as requested in image) ---
         st.divider()
         st.subheader(f"📊 Batch Summary Statistics (n={len(res_df)})")
         stats_df = res_df.drop(columns='Sample').agg(['mean', 'std', 'count']).T
         stats_df.columns = ['Mean', 'Std. Deviation', 'n']
         st.table(stats_df.style.format("{:.2f}"))
         
-        st.subheader("📋 Individual Test Records")
-        st.dataframe(res_df, hide_index=True, use_container_width=True)
+        st.subheader("📋 Complete Individual Test Records")
+        # Ensure the table shows all columns from the image
+        st.dataframe(res_df[[
+            "Sample", "Modulus (E) [MPa]", "Yield Stress [MPa]", "Yield Strain [%]", 
+            "Stress @ Peak [MPa]", "Strain @ Peak [%]", "Work Done [J]", "Toughness [MJ/m³]"
+        ]], hide_index=True, use_container_width=True)
         
+        # --- EXPORT ---
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
             res_df.to_excel(writer, sheet_name='Samples', index=False)
@@ -259,4 +282,4 @@ if uploaded_files:
             if control_sample:
                 comp_df.to_excel(writer, sheet_name='Comparison_Analysis', index=False)
         
-        st.download_button(label="📥 Download Comprehensive Excel Report", data=output.getvalue(), file_name=f"{project_name}_Full_Report.xlsx")
+        st.download_button(label="📥 Download Full Excel Report", data=output.getvalue(), file_name=f"{project_name}_Full_Report.xlsx")
