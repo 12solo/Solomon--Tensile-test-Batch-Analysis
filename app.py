@@ -1,125 +1,141 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
+import plotly.graph_objects as go
 import io
-from scipy import stats
+import requests
 
 # --- 1. Page Configuration ---
-st.set_page_config(page_title="Solomon Research - Calculation Fix", layout="wide")
+st.set_page_config(page_title="Solomon Tensile Suite Pro", layout="wide")
 
-if 'experimental_batch' not in st.session_state: 
-    st.session_state.experimental_batch = {}
+# --- 2. Styling & Header ---
+logo_url = "https://raw.githubusercontent.com/12solo/Tensile-test-extrapolator/main/logo%20s.png"
+col_logo, col_text = st.columns([1, 5])
+with col_logo:
+    try: st.image(logo_url, width=120)
+    except: st.header("🔬")
+with col_text:
+    st.title("Solomon Tensile Suite v2.0")
+    st.caption("Research-Grade Multi-Sample Analysis & Extrapolation")
 
-# --- 2. Header ---
-st.title("Solomon Tensile Suite: Research Edition v2.6.2")
-st.markdown("**Corrected Precision Analytics for High-Elongation Bioplastics** 🚀")
+# --- 3. Sidebar: Global Research Parameters ---
+st.sidebar.header("📁 Global Metadata")
+project_name = st.sidebar.text_input("Project Name", "PBAT/PLA Blend Study")
 
-# --- 3. Sidebar Setup ---
-st.sidebar.header("📂 Specimen Dimensions")
-area = st.sidebar.number_input("Cross-sectional Area (mm²)", value=16.0)
-gauge_length = st.sidebar.number_input("Initial Gauge Length (mm)", value=50.0)
+with st.sidebar.expander("⚙️ Specimen Geometry (ASTM D638)", expanded=True):
+    gauge_length = st.number_input("Initial Gauge Length (mm)", value=25.0)
+    thickness = st.number_input("Thickness (mm)", value=2.0)
+    width = st.number_input("Width (mm)", value=6.0)
+    area = width * thickness
+    st.caption(f"Calculated Area: {area:.2f} mm²")
 
-st.sidebar.header("⚙️ Precision Settings")
-normalize = st.sidebar.checkbox("Toe-Region Correction", value=True)
-# If your data is low-res, increase this limit to capture more points
-search_limit = st.sidebar.slider("Modulus Search Limit (Strain %)", 0.1, 10.0, 2.0)
+with st.sidebar.expander("🎯 Analysis Settings"):
+    target_def = st.number_input("Target Extrapolation (mm)", value=400.0)
+    ym_range = st.slider("Modulus Strain Range (%)", 0.0, 5.0, (0.2, 1.0))
+    apply_noise = st.checkbox("Simulate Plateau Noise", value=True)
+    noise_lvl = st.number_input("Noise Std Dev (N)", value=0.05)
 
-if st.sidebar.button("🗑️ Clear Batch Data"):
-    st.session_state.experimental_batch = {}
-    st.rerun()
-
-# --- 4. Bulk Processing Loop ---
-st.subheader("1. Process Samples")
-uploaded_files = st.file_uploader("Upload Samples", type=['csv', 'xlsx'], accept_multiple_files=True)
+# --- 4. Batch File Uploader ---
+st.subheader("📤 Data Import")
+uploaded_files = st.file_uploader("Upload Multiple Samples (CSV/Excel)", type=['csv', 'xlsx'], accept_multiple_files=True)
 
 if uploaded_files:
-    if st.button(f"Analyze {len(uploaded_files)} Samples"):
-        for uploaded_file in uploaded_files:
-            name = uploaded_file.name.split('.')[0]
+    all_results = []
+    fig = go.Figure()
+
+    # Process each file
+    for file in uploaded_files:
+        try:
+            # Load data
+            df = pd.read_csv(file) if file.name.endswith('.csv') else pd.read_excel(file)
+            # Standardizing columns (Assumes Force is 1st, Def is 2nd - adjust as needed)
+            f_col, d_col = df.columns[0], df.columns[1]
             
-            try:
-                df = pd.read_csv(uploaded_file) if uploaded_file.name.endswith('.csv') else pd.read_excel(uploaded_file)
-                # Force is assumed to be Column 0, Deformation is Column 1
-                f_raw, d_raw = df.iloc[:, 0].values, df.iloc[:, 1].values 
-            except: continue
-
-            # A. Toe-Region / Slack Normalization
-            if normalize:
-                # Find the first index where force is strictly increasing and > 0.01N
-                # This is much more sensitive for bioplastics
-                start_points = np.where(f_raw > 0.01)[0]
-                idx = start_points[0] if len(start_points) > 0 else 0
-                f, d = f_raw[idx:] - f_raw[idx], d_raw[idx:] - d_raw[idx]
-            else:
-                f, d = f_raw, d_raw
-
-            stress = f / area
-            strain = (d / gauge_length) * 100 
-
-            # B. MODULUS CALCULATION (E) - REVISED
-            # 1. Filter data within the search limit
-            mask_e = (strain > 0) & (strain <= search_limit)
-            stress_e = stress[mask_e]
-            strain_e = strain[mask_e] / 100 # Convert % to mm/mm for MPa slope
+            # --- Extrapolation Logic ---
+            ref_pts = 50
+            last_n = df.tail(ref_pts)
+            slope, intercept = np.polyfit(last_n[d_col], last_n[f_col], 1)
+            d_stop, f_stop = df[d_col].iloc[-1], df[f_col].iloc[-1]
             
-            e_val = 0
-            # Reduced requirement to 5 points to prevent "Zero" results on small files
-            if len(stress_e) > 5:
-                # Use a smaller window (10% of available elastic data)
-                window = max(3, int(len(stress_e) * 0.1))
-                slopes = []
-                for i in range(len(stress_e) - window):
-                    # Linear regression on the sliding window
-                    res = stats.linregress(strain_e[i:i+window], stress_e[i:i+window])
-                    slopes.append(res.slope)
+            # Generate extrapolation if needed
+            if d_stop < target_def:
+                d_ext = np.linspace(d_stop, target_def, 100)
+                noise = np.random.normal(0, noise_lvl, len(d_ext)) if apply_noise else 0
+                f_ext = f_stop + slope * (d_ext - d_stop) + noise
                 
-                # Pick the maximum slope found in the elastic region
-                e_val = max(slopes) if len(slopes) > 0 else 0
+                df_ext = pd.DataFrame({f_col: f_ext, d_col: d_ext})
+                df_full = pd.concat([df[[f_col, d_col]], df_ext], ignore_index=True)
+            else:
+                df_full = df
 
-            # C. YIELD & ENERGY
-            yield_val = stress[strain <= 25.0].max() if any(strain <= 25.0) else stress.max()
+            # --- Engineering Calculations ---
+            df_full['Stress'] = df_full[f_col] / area
+            df_full['Strain'] = (df_full[d_col] / gauge_length) * 100
             
-            # Numeric integration using the most compatible method
-            try: work_val = np.trapezoid(f, d) / 1000.0
-            except: work_val = np.trapz(f, d) / 1000.0
+            # Young's Modulus (E)
+            mask_e = (df_full['Strain'] >= ym_range[0]) & (df_full['Strain'] <= ym_range[1])
+            E, _ = np.polyfit(df_full.loc[mask_e, 'Strain']/100, df_full.loc[mask_e, 'Stress'], 1)
+            
+            # Yield (Max Stress in early region)
+            yield_idx = df_full[df_full['Strain'] < 40]['Stress'].idxmax()
+            y_stress = df_full.loc[yield_idx, 'Stress']
+            
+            # Toughness (Area under curve in MJ/m^3)
+            # Energy (J) = Integral of Force (N) wrt Displacement (m)
+            energy_j = np.trapz(df_full[f_col], df_full[d_col] / 1000)
+            volume_m3 = (area * gauge_length) * 1e-9
+            toughness = (energy_j / volume_m3) / 1e6 # Convert to MJ/m^3
 
-            st.session_state.experimental_batch[name] = {
-                "E (MPa)": round(e_val, 2),
-                "Yield (MPa)": round(yield_val, 2),
-                "UTS (MPa)": round(stress.max(), 2),
-                "Elongation (%)": round(strain[-1], 2),
-                "Work (J)": round(work_val, 4),
-                "strain_plot": strain,
-                "stress_plot": stress
-            }
-        st.success("Processing complete. Check results below.")
+            # --- Store Metrics ---
+            all_results.append({
+                "Sample": file.name,
+                "E (MPa)": round(E, 2),
+                "Yield (MPa)": round(y_stress, 2),
+                "Break Strain (%)": round(df_full['Strain'].iloc[-1], 1),
+                "Toughness (MJ/m³)": round(toughness, 3)
+            })
 
-# --- 5. Results Display ---
-if st.session_state.experimental_batch:
+            # --- Add to Plotly ---
+            fig.add_trace(go.Scatter(
+                x=df_full['Strain'], 
+                y=df_full['Stress'], 
+                name=file.name,
+                mode='lines',
+                hovertemplate='%{x:.1f}%, %{y:.2f} MPa'
+            ))
+
+        except Exception as e:
+            st.error(f"Error processing {file.name}: {e}")
+
+    # --- 5. Visualization Dashboard ---
+    col_plot, col_stats = st.columns([2, 1])
+
+    with col_plot:
+        st.subheader("Comparison Plot")
+        fig.update_layout(
+            xaxis_title="Strain (%)",
+            yaxis_title="Engineering Stress (MPa)",
+            legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01),
+            margin=dict(l=0, r=0, t=30, b=0),
+            hovermode="x unified"
+        )
+        st.plotly_chart(fig, use_container_width=True)
+
+    with col_stats:
+        st.subheader("Batch Metrics")
+        res_df = pd.DataFrame(all_results)
+        st.dataframe(res_df, hide_index=True)
+        
+        # Download results as CSV
+        csv = res_df.to_csv(index=False).encode('utf-8')
+        st.download_button("📥 Export Summary CSV", csv, "batch_summary.csv", "text/csv")
+
+    # --- 6. Statistical Summary ---
     st.divider()
-    
-    results_df = pd.DataFrame.from_dict(
-        {k: {m: v for m, v in val.items() if "_plot" not in m} for k, val in st.session_state.experimental_batch.items()},
-        orient='index'
-    )
-    
-    st.subheader("2. Summary Table")
-    st.dataframe(results_df, use_container_width=True)
+    st.subheader("📈 Statistical Analysis")
+    if not res_df.empty:
+        stats_summary = res_df.describe().loc[['mean', 'std']]
+        st.table(stats_summary)
 
-    # Batch Stats
-    st.markdown("**Statistical Overview**")
-    stats_df = pd.DataFrame({
-        "Mean": results_df.mean(),
-        "Std Dev": results_df.std(),
-        "RSD (%)": (results_df.std() / results_df.mean()) * 100
-    }).T
-    st.dataframe(stats_df.style.format(precision=2), use_container_width=True)
-
-    # Plots
-    fig, ax = plt.subplots(figsize=(10, 5))
-    for name, data in st.session_state.experimental_batch.items():
-        ax.plot(data["strain_plot"], data["stress_plot"], label=name)
-    ax.set_xlabel("Strain (%)"); ax.set_ylabel("Stress (MPa)")
-    ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
-    st.pyplot(fig)
+else:
+    st.info("Please upload one or more tensile data files to begin analysis.")
