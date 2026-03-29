@@ -126,7 +126,7 @@ if uploaded_files:
     st.subheader("🛠️ Sample Configuration & Modulus Validation")
     with st.expander("⚡ Bulk Update (Apply to All Samples)"):
         b1, b2 = st.columns([3, 1])
-        bulk_range = b1.slider("Select Global Modulus Range (%)", 0.0, 10.0, (0.2, 1.0), key="bulk_slider")
+        bulk_range = b1.slider("Select Global Modulus Range (%)", 0.0, 20.0, (0.2, 1.0), key="bulk_slider")
         if b2.button("Apply to All"):
             for file in uploaded_files:
                 if file: st.session_state[f"range_{file.name}"] = bulk_range
