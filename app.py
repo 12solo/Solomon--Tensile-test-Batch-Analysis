@@ -7,8 +7,8 @@ import io
 # --- 1. Page Config ---
 st.set_page_config(page_title="Solomon Tensile Suite Pro", layout="wide")
 
-st.title("Solomon Tensile Suite v2.5")
-st.caption("Standardized 0.2% Offset Yield & Toe-Compensation")
+st.title("Solomon Tensile Suite v2.6")
+st.caption("Standardized 0.2% Offset Yield & Robust Data Validation")
 
 # --- 2. Sidebar ---
 st.sidebar.header("📏 Specimen Geometry")
@@ -46,6 +46,7 @@ if uploaded_files:
         df = load_data(file)
         if df is None or df.empty: continue
         
+        # Mapping columns (Force = 1st, Displacement = 2nd)
         f_col, d_col = df.columns[0], df.columns[1]
         df[f_col] = pd.to_numeric(df[f_col], errors='coerce')
         df[d_col] = pd.to_numeric(df[d_col], errors='coerce')
@@ -55,8 +56,15 @@ if uploaded_files:
         raw_stress = df[f_col] / area
         raw_strain = (df[d_col] / gauge_length) * 100
         
-        # --- Toe-Compensation & Modulus ---
+        # --- ROBUST VALIDATION ---
         mask_e = (raw_strain >= ym_start) & (raw_strain <= ym_end)
+        
+        # Check if we have at least 2 points to fit a line
+        if np.sum(mask_e) < 2:
+            st.warning(f"⚠️ Skipping {file.name}: No data found between {ym_start}% and {ym_end}% strain.")
+            continue
+
+        # --- Toe-Compensation & Modulus ---
         E_slope, intercept_y = np.polyfit(raw_strain[mask_e], raw_stress[mask_e], 1)
         strain_shift = -intercept_y / E_slope
         
@@ -68,14 +76,11 @@ if uploaded_files:
             final_strain, final_stress = raw_strain, raw_stress
 
         # --- 0.2% Offset Yield Calculation ---
-        # Offset line equation: Stress = E * (Strain - 0.2)
         offset_strain = final_strain - 0.2
         offset_stress_line = E_slope * offset_strain
-        
-        # Find intersection (Yield Point)
         diff = final_stress - offset_stress_line
-        # Find first point where data curve falls below the offset line
         idx_yield = np.where(diff < 0)[0]
+        
         if len(idx_yield) > 0:
             y_idx = idx_yield[0]
             yield_stress = final_stress.iloc[y_idx]
@@ -88,7 +93,7 @@ if uploaded_files:
         except: energy_j = np.trapz(final_stress * area, (final_strain / 100 * gauge_length) / 1000)
         toughness = (energy_j / ((area * gauge_length) * 1e-9)) / 1e6
 
-        # --- Results ---
+        # --- Results Store ---
         all_results.append({
             "Sample": file.name,
             "Modulus (MPa)": round(E_slope * 100, 2),
@@ -99,10 +104,8 @@ if uploaded_files:
         })
 
         # --- Plotting ---
-        # Main Data Curve
         fig.add_trace(go.Scatter(x=final_strain, y=final_stress, name=f"{file.name}"))
         
-        # 0.2% Offset Line (for the last sample or a specific one to avoid clutter)
         if show_offset_line and not np.isnan(yield_strain):
             line_x = np.linspace(0.2, yield_strain * 1.5, 20)
             line_y = E_slope * (line_x - 0.2)
@@ -111,16 +114,21 @@ if uploaded_files:
             fig.add_trace(go.Scatter(x=[yield_strain], y=[yield_stress], mode='markers', 
                                      name=f"Yield {file.name}", marker=dict(size=8)))
 
-    fig.update_layout(xaxis_title="Corrected Strain (%)", yaxis_title="Stress (MPa)", template="plotly_white")
+    # --- 5. Visualizations ---
+    fig.update_layout(xaxis_title="Corrected Strain (%)", yaxis_title="Stress (MPa)", 
+                      template="plotly_white", hovermode="x unified")
     st.plotly_chart(fig, use_container_width=True)
     
-    res_df = pd.DataFrame(all_results)
-    st.subheader("📊 Research Statistics")
-    st.table(res_df.drop(columns='Sample').agg(['mean', 'std']).T.style.format("{:.2f}"))
-    st.dataframe(res_df, hide_index=True)
+    if all_results:
+        res_df = pd.DataFrame(all_results)
+        st.subheader("📊 Research Statistics")
+        st.table(res_df.drop(columns='Sample').agg(['mean', 'std']).T.style.format("{:.2f}"))
+        st.dataframe(res_df, hide_index=True)
 
-    # Excel Export
-    output = io.BytesIO()
-    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        res_df.to_excel(writer, sheet_name='Summary', index=False)
-    st.download_button("📥 Download Report", output.getvalue(), "Tensile_Analysis_v2.5.xlsx")
+        # Excel Export
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            res_df.to_excel(writer, sheet_name='Summary', index=False)
+        st.download_button("📥 Download Research Report", output.getvalue(), "Tensile_Analysis_v2.6.xlsx")
+    else:
+        st.error("No valid samples were processed. Please check your data ranges.")
