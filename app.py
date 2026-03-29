@@ -173,33 +173,52 @@ if uploaded_files:
             else:
                 ctrl_col.error("Insufficient points in range.")
 
-    # --- 6. Final Reporting Dashboard ---
-   # --- Updated Excel Export with Specimen Count (n=X) ---
+ # --- 6. Final Reporting Dashboard ---
+    st.divider()
+    st.subheader("Global Stress-Strain Comparison")
+    fig_main.update_layout(
+        xaxis_title="Strain (%)", yaxis_title="Stress (MPa)",
+        template="plotly_white", hovermode="x unified"
+    )
+    st.plotly_chart(fig_main, use_container_width=True)
+
+    if all_results:
+        # FIX: Ensure res_df is defined here before it is used for statistics or export
+        res_df = pd.DataFrame(all_results)
+        n_count = len(res_df)
+        
+        st.subheader(f"📊 Batch Summary Statistics (n={n_count})")
+        
+        # Calculate Statistics for the UI Table
+        stats_df = res_df.drop(columns='Sample').agg(['mean', 'std', 'count']).T
+        stats_df.columns = ['Mean', 'Std. Deviation', 'n']
+        st.table(stats_df.style.format("{:.2f}"))
+        
+        st.dataframe(res_df, hide_index=True)
+
+        # --- Updated Excel Export with n=X ---
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-            # 1. Individual Sample Results Sheet
+            # Sheet 1: Individual Data
             res_df.to_excel(writer, sheet_name='Individual_Samples', index=False)
             
-            # 2. Batch Summary Statistics Sheet
-            # Calculate Mean, SD, and Count (n)
-            stats_summary = res_df.drop(columns='Sample').agg(['mean', 'std', 'count']).T
-            # Rename 'count' to 'Specimen Count (n)' for professional clarity
-            stats_summary.columns = ['Mean', 'Std. Deviation', 'Specimen Count (n)']
+            # Sheet 2: Formal Statistics
+            stats_df.to_excel(writer, sheet_name='Batch_Statistics')
             
-            stats_summary.to_excel(writer, sheet_name='Batch_Statistics')
-            
-            # Formatting for professional report
+            # Professional Formatting
             workbook = writer.book
-            header_format = workbook.add_format({'bold': True, 'bg_color': '#D7E4BC', 'border': 1})
-            num_format = workbook.add_format({'num_format': '0.00', 'border': 1})
-            
             for sheet_name in ['Individual_Samples', 'Batch_Statistics']:
                 worksheet = writer.sheets[sheet_name]
-                # Auto-adjust column width for readability
-                worksheet.set_column('A:Z', 22, num_format)
+                worksheet.set_column('A:Z', 20) # Wider columns for long names
                 
         st.download_button(
-            label=f"📥 Download Official Report (n={len(res_df)})", 
+            label=f"📥 Download Official Report (n={n_count})", 
+            data=output.getvalue(), 
+            file_name=f"{project_name}_Final_Report.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+    else:
+        st.warning("No valid results to display. Please adjust your Modulus Fit Ranges.")
             data=output.getvalue(), 
             file_name=f"{project_name}_Final_Report.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
