@@ -112,7 +112,7 @@ else:
 # --- 8. Core Processing Engine ---
 if uploaded_files:
     all_results = []
-    plot_data_storage = {} # To store data for Matplotlib journal plot
+    plot_data_storage = {} 
 
     st.subheader("🛠️ Sample Configuration & Modulus Validation")
     with st.expander("⚡ Bulk Update (Apply to All Samples)"):
@@ -147,10 +147,9 @@ if uploaded_files:
             stress_all = df_clean[f_col].values if (inst_stress_col and f_col == inst_stress_col) else (df_clean[f_col].values / area)
             strain_all = (disp_all / gauge_length) * 100
 
-        # LIMIT DATA AT MAXIMUM STRESS (PEAK)
-        peak_idx = np.argmax(stress_all) + 1
-        stress_raw = stress_all[:peak_idx]
-        strain_raw = strain_all[:peak_idx]
+        peak_idx = np.argmax(stress_all)
+        stress_raw = stress_all[:peak_idx + 1]
+        strain_raw = strain_all[:peak_idx + 1]
 
         with st.expander(f"Adjust & Preview: {file.name}", expanded=False):
             ctrl_col, prev_col = st.columns([1, 2])
@@ -167,19 +166,13 @@ if uploaded_files:
                 else:
                     strain_plot, stress_plot = strain_raw, stress_raw
 
-                # Store for main plot
                 plot_data_storage[file.name] = (strain_plot, stress_plot)
 
-                # Interactive Preview (Plotly)
                 fig_mini = go.Figure()
                 fig_mini.add_trace(go.Scatter(x=strain_plot, y=stress_plot, name="Data", line=dict(color='teal')))
-                fit_x = np.linspace(0, current_range[1] * 2, 20)
-                fit_y = E_slope * fit_x + (0 if apply_zeroing else intercept_y)
-                fig_mini.add_trace(go.Scatter(x=fit_x, y=fit_y, name="Fit", line=dict(dash='dot', color='red')))
                 fig_mini.update_layout(height=250, margin=dict(l=0, r=0, t=0, b=0), template="plotly_white", showlegend=False)
                 prev_col.plotly_chart(fig_mini, use_container_width=True)
 
-                # Summary Metrics
                 offset_line = E_slope * (strain_plot - 0.2)
                 idx_yield = np.where((stress_plot - offset_line) < 0)[0]
                 y_stress = stress_plot[idx_yield[0]] if len(idx_yield) > 0 else np.nan
@@ -202,7 +195,6 @@ if uploaded_files:
         st.divider()
         st.subheader("🏛️ Journal Publication Graphics")
 
-        # MATPLOTLIB GLOBAL SETTINGS FOR JOURNALS
         plt.rcParams.update({
             "font.family": "serif", "font.serif": ["Times New Roman"], "font.size": 12,
             "axes.linewidth": 1.5, "xtick.major.width": 1.5, "ytick.major.width": 1.5, "figure.dpi": 300
@@ -211,8 +203,23 @@ if uploaded_files:
         fig, ax = plt.subplots(figsize=(8, 6))
         colors = plt.cm.viridis(np.linspace(0, 0.8, len(plot_data_storage)))
 
+        global_max_strain = 0
+        global_max_stress = 0
+
         for i, (name, data) in enumerate(plot_data_storage.items()):
-            ax.plot(data[0], data[1], label=name, color=colors[i], lw=2)
+            strain_vals, stress_vals = data
+            ax.plot(strain_vals, stress_vals, label=name, color=colors[i], lw=2)
+            
+            # Add Peak Stress Markers (Gold Star) as requested
+            ax.plot(strain_vals[-1], stress_vals[-1], '*', color='gold', markersize=12, markeredgecolor='black', zorder=5)
+            ax.axvline(x=strain_vals[-1], color='gray', linestyle='--', alpha=0.3, lw=1)
+            
+            global_max_strain = max(global_max_strain, strain_vals.max())
+            global_max_stress = max(global_max_stress, stress_vals.max())
+
+        # Seal plot to 0,0 borderline
+        ax.set_xlim(left=0, right=global_max_strain * 1.05)
+        ax.set_ylim(bottom=0, top=global_max_stress * 1.1)
 
         ax.set_xlabel('Strain (%)', fontweight='bold', labelpad=10)
         ax.set_ylabel('Stress (MPa)', fontweight='bold', labelpad=10)
@@ -223,7 +230,6 @@ if uploaded_files:
         
         st.pyplot(fig)
 
-        # Download Button for High-Res TIFF
         img_buffer = io.BytesIO()
         fig.savefig(img_buffer, format="tiff", dpi=300, bbox_inches='tight')
         st.download_button(
