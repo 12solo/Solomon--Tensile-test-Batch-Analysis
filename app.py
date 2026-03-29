@@ -7,37 +7,38 @@ import re
 
 # --- 1. Page Config ---
 st.set_page_config(page_title="Solomon Tensile Suite Pro", layout="wide")
-st.title("Solomon Tensile Suite v3.3")
-st.caption("Comprehensive Mechanical Property Reporting & Batch Analysis")
+st.title("Solomon Tensile Suite v3.4")
+st.info("Manual Unit Override & Scientific Validation Mode")
 
-# --- 2. Sidebar Settings ---
-st.sidebar.header("📝 Project Info")
-project_name = st.sidebar.text_input("Project Name", "PBAT-PLA-Study")
-batch_id = st.sidebar.text_input("Batch/Lot ID", "Sample-Set-01")
+# --- 2. Sidebar: Professional Inputs ---
+st.sidebar.header("📝 Project Metadata")
+project_name = st.sidebar.text_input("Research Topic", "PBAT-PLA-Biocomposites")
 
 st.sidebar.header("📏 Specimen Geometry")
-thickness = st.sidebar.number_input("Thickness (mm)", value=2.0)
-width = st.sidebar.number_input("Width (mm)", value=6.0)
-gauge_length = st.sidebar.number_input("Gauge Length (mm)", value=25.0)
+thickness = st.sidebar.number_input("Thickness (mm)", value=2.0, step=0.1)
+width = st.sidebar.number_input("Width (mm)", value=6.0, step=0.1)
+gauge_length = st.sidebar.number_input("Initial Gauge Length (L0) [mm]", value=25.0, step=1.0)
 area = width * thickness 
-volume_mm3 = area * gauge_length
 
-st.sidebar.header("⚙️ Unit & Analysis Settings")
-manual_scale = st.sidebar.number_input("Displacement Scale Factor", value=0.001, format="%.3f")
-apply_zeroing = st.sidebar.checkbox("Apply Toe-Compensation", value=True)
-ym_start = st.sidebar.slider("Modulus Start Strain (%)", 0.0, 5.0, 0.2)
-ym_end = st.sidebar.slider("Modulus End Strain (%)", 0.1, 20.0, 1.0)
+st.sidebar.header("⚙️ Data Calibration")
+# Critical for your 1120% error:
+unit_input = st.sidebar.selectbox("Raw Displacement Unit", ["Millimeters (mm)", "Micrometers (um)", "Meters (m)"])
+scale_map = {"Millimeters (mm)": 1.0, "Micrometers (um)": 0.001, "Meters (m)": 1000.0}
+u_scale = scale_map[unit_input]
 
-# --- 3. Smart Data Loader ---
+apply_zeroing = st.sidebar.checkbox("Apply Toe-Compensation (Shift to 0,0)", value=True)
+ym_range = st.sidebar.slider("Modulus Fit Range (%)", 0.0, 5.0, (0.2, 1.0))
+
+# --- 3. Robust Data Loader ---
 def smart_load(file):
     try:
         raw_bytes = file.getvalue()
         content = raw_bytes.decode("utf-8", errors="ignore")
         lines = content.splitlines()
+        # Find first line with at least 2 numbers
         start_row = 0
         for i, line in enumerate(lines):
-            nums = re.findall(r"[-+]?\d*\.\d+|\d+", line)
-            if len(nums) >= 2:
+            if len(re.findall(r"[-+]?\d*\.\d+|\d+", line)) >= 2:
                 start_row = i
                 break
         sep = '\t' if '\t' in lines[start_row] else (',' if ',' in lines[start_row] else r'\s+')
@@ -57,56 +58,52 @@ if uploaded_files:
         df = smart_load(file)
         if df is None or df.empty: continue
         
+        # Manual Column Assignment (fallback to first two if keywords fail)
         cols = df.columns.tolist()
-        f_col = next((c for c in cols if any(k in c.lower() for k in ['load', 'force', 'n'])), cols[0])
-        d_col = next((c for c in cols if any(k in c.lower() for k in ['ext', 'disp', 'mm', 'dist', 'pos'])), cols[1])
+        f_col = st.sidebar.selectbox(f"Force Col ({file.name})", cols, index=0, key=f"f_{file.name}")
+        d_col = st.sidebar.selectbox(f"Disp Col ({file.name})", cols, index=1, key=f"d_{file.name}")
         
         df[f_col] = pd.to_numeric(df[f_col], errors='coerce')
         df[d_col] = pd.to_numeric(df[d_col], errors='coerce')
         df = df.dropna(subset=[f_col, d_col])
 
-        # Core Units
-        disp_mm = df[d_col].values * manual_scale
-        raw_stress = df[f_col].values / area
-        raw_strain = (disp_mm / gauge_length) * 100
+        # 1. Engineering Conversion
+        disp_mm = df[d_col].values * u_scale
+        stress_raw = df[f_col].values / area
+        strain_raw = (disp_mm / gauge_length) * 100
         
-        # Validation
-        mask_e = (raw_strain >= ym_start) & (raw_strain <= ym_end)
+        # 2. Modulus Calculation (Slope of elastic region)
+        mask_e = (strain_raw >= ym_range[0]) & (strain_raw <= ym_range[1])
         if np.sum(mask_e) < 3:
-            st.warning(f"⚠️ {file.name}: Check units. Max Strain: {raw_strain.max():.1f}%")
+            st.warning(f"⚠️ {file.name}: Incomplete data in {ym_range}% range. Check units.")
             continue
-
-        # Modulus & Zeroing
-        E_slope, intercept_y = np.polyfit(raw_strain[mask_e], raw_stress[mask_e], 1)
+            
+        E_slope, intercept_y = np.polyfit(strain_raw[mask_e], stress_raw[mask_e], 1)
+        
+        # 3. Toe-Compensation (Shift X-axis)
         if apply_zeroing:
             shift = -intercept_y / E_slope
-            strain = raw_strain - shift
+            strain = strain_raw - shift
             mask_pos = strain >= 0
-            # FIX: Properly closed logic
-            strain = strain[mask_pos]
-            stress = raw_stress[mask_pos]
-            force_vals = df[f_col].values[mask_pos]
-            disp_vals = disp_mm[mask_pos]
+            strain, stress = strain[mask_pos], stress_raw[mask_pos]
+            f_final, d_final = df[f_col].values[mask_pos], disp_mm[mask_pos]
         else:
-            strain, stress = raw_strain, raw_stress
-            force_vals = df[f_col].values
-            disp_vals = disp_mm
+            strain, stress = strain_raw, stress_raw
+            f_final, d_final = df[f_col].values, disp_mm
 
-        # 0.2% Offset Yield
+        # 4. 0.2% Offset Yield (Standard for Polymers)
         offset_line = E_slope * (strain - 0.2)
         idx_yield = np.where((stress - offset_line) < 0)[0]
         y_stress = stress[idx_yield[0]] if len(idx_yield) > 0 else np.nan
         y_strain = strain[idx_yield[0]] if len(idx_yield) > 0 else np.nan
 
-        # Energy & Toughness (NumPy 2.0 compatible)
-        try: 
-            work_done_j = np.trapezoid(force_vals, disp_vals / 1000.0)
-        except AttributeError: 
-            work_done_j = np.trapz(force_vals, disp_vals / 1000.0)
+        # 5. Energy (Work Done) & Toughness
+        try: work_j = np.trapezoid(f_final, d_final / 1000.0)
+        except: work_j = np.trapz(f_final, d_final / 1000.0)
         
-        toughness = (work_done_j / (volume_mm3 * 1e-9)) / 1e6
+        # Toughness in MJ/m3 (Energy / Volume)
+        toughness = (work_j / ((area * gauge_length) * 1e-9)) / 1e6
 
-        # --- Report Metrics ---
         all_results.append({
             "Sample": file.name,
             "Modulus (E) [MPa]": round(E_slope * 100, 1),
@@ -114,41 +111,22 @@ if uploaded_files:
             "Yield Strain [%]": round(y_strain, 2),
             "Stress @ Break [MPa]": round(stress[-1], 2),
             "Strain @ Break [%]": round(strain[-1], 2),
-            "Work Done [J]": round(work_done_j, 4),
+            "Work Done [J]": round(work_j, 4),
             "Toughness [MJ/m³]": round(toughness, 3)
         })
 
         fig.add_trace(go.Scatter(x=strain, y=stress, name=file.name))
 
-    # --- 5. Visualization & Reporting ---
+    # --- 5. Reporting Dashboard ---
     st.plotly_chart(fig, use_container_width=True)
     
     if all_results:
         res_df = pd.DataFrame(all_results)
-        
-        st.subheader("📊 Statistical Analysis (Batch Mean ± SD)")
-        stats_df = res_df.drop(columns='Sample').agg(['mean', 'std']).T
-        st.table(stats_df.style.format("{:.2f}"))
-
-        st.subheader("📋 Comprehensive Property Report")
+        st.subheader("📊 Batch Summary Statistics")
+        st.table(res_df.drop(columns='Sample').agg(['mean', 'std']).T.style.format("{:.2f}"))
         st.dataframe(res_df, hide_index=True)
 
-        # Excel Export Engine
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-            res_df.to_excel(writer, sheet_name='Sample Data', index=False)
-            stats_df.to_excel(writer, sheet_name='Statistical Summary')
-            
-            # Formatting
-            workbook = writer.book
-            worksheet = writer.sheets['Sample Data']
-            header_format = workbook.add_format({'bold': True, 'bg_color': '#D7E4BC', 'border': 1})
-            for col_num, value in enumerate(res_df.columns.values):
-                worksheet.write(0, col_num, value, header_format)
-
-        st.download_button(
-            label=f"📥 Download Full {project_name} Report",
-            data=output.getvalue(),
-            file_name=f"{project_name}_{batch_id}_Final_Report.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
+            res_df.to_excel(writer, sheet_name='Summary', index=False)
+        st.download_button("📥 Download Official Report", output.getvalue(), f"{project_name}_Final_Report.xlsx")
