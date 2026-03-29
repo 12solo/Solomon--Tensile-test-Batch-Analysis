@@ -4,6 +4,7 @@ import numpy as np
 import plotly.graph_objects as go
 import io
 import re
+import requests
 from PIL import Image
 from streamlit_drawable_canvas import st_canvas
 
@@ -122,7 +123,6 @@ if uploaded_files:
     all_results = []
     fig_main = go.Figure()
 
-    # Bulk Update must be OUTSIDE the file loop to avoid duplicate ID errors
     st.subheader("🛠️ Sample Configuration & Modulus Validation")
     with st.expander("⚡ Bulk Update (Apply to All Samples)"):
         b1, b2 = st.columns([3, 1])
@@ -138,7 +138,12 @@ if uploaded_files:
         if df is None or df.empty: continue
         
         cols = df.columns.tolist()
-        def_f = cols[1] if "Digitized Stress" in cols else cols[0]
+        
+        # --- SMART COLUMN MAPPING (PRIORITIZING SFORZO) ---
+        # Checks for 'Sforzo' keyword for instrument-calculated stress
+        inst_stress_col = next((c for c in cols if "sforzo" in c.lower()), None)
+        
+        def_f = inst_stress_col if inst_stress_col else (cols[1] if "Digitized Stress" in cols else cols[0])
         def_d = cols[0] if "Digitized Strain" in cols else cols[1]
 
         f_col = st.sidebar.selectbox(f"Force/Stress ({file.name})", cols, index=cols.index(def_f), key=f"f_{file.name}")
@@ -152,7 +157,11 @@ if uploaded_files:
             disp_mm = (strain_raw / 100) * gauge_length
         else:
             disp_mm = df_clean[d_col].values * u_scale
-            stress_raw = df_clean[f_col].values / area
+            # IF INSTRUMENT STRESS DETECTED, USE IT DIRECTLY
+            if inst_stress_col and f_col == inst_stress_col:
+                stress_raw = df_clean[f_col].values
+            else:
+                stress_raw = df_clean[f_col].values / area
             strain_raw = (disp_mm / gauge_length) * 100
 
         with st.expander(f"Adjust & Preview: {file.name}", expanded=False):
