@@ -31,7 +31,7 @@ with col_logo:
 # Column 2: Creative Title & Subtle Branding
 with col_text:
     # A powerful, bold title
-    st.title("Solomon Tensile Suite v1.9")
+    st.title("Solomon Tensile Suite 2")
     
     # A short, impactful tagline that frames the eco-research
     st.markdown("""
