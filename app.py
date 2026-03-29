@@ -139,10 +139,7 @@ if uploaded_files:
         
         cols = df.columns.tolist()
         
-        # --- SMART COLUMN MAPPING (PRIORITIZING SFORZO) ---
-        # Checks for 'Sforzo' keyword for instrument-calculated stress
         inst_stress_col = next((c for c in cols if "sforzo" in c.lower()), None)
-        
         def_f = inst_stress_col if inst_stress_col else (cols[1] if "Digitized Stress" in cols else cols[0])
         def_d = cols[0] if "Digitized Strain" in cols else cols[1]
 
@@ -152,17 +149,22 @@ if uploaded_files:
         df_clean = df[[f_col, d_col]].apply(pd.to_numeric, errors='coerce').dropna()
         
         if "Digitized" in str(file.name):
-            stress_raw = df_clean[f_col].values
-            strain_raw = df_clean[d_col].values
-            disp_mm = (strain_raw / 100) * gauge_length
+            stress_all = df_clean[f_col].values
+            strain_all = df_clean[d_col].values
+            disp_all = (strain_all / 100) * gauge_length
         else:
-            disp_mm = df_clean[d_col].values * u_scale
-            # IF INSTRUMENT STRESS DETECTED, USE IT DIRECTLY
+            disp_all = df_clean[d_col].values * u_scale
             if inst_stress_col and f_col == inst_stress_col:
-                stress_raw = df_clean[f_col].values
+                stress_all = df_clean[f_col].values
             else:
-                stress_raw = df_clean[f_col].values / area
-            strain_raw = (disp_mm / gauge_length) * 100
+                stress_all = df_clean[f_col].values / area
+            strain_all = (disp_all / gauge_length) * 100
+
+        # --- LIMIT DATA AT MAXIMUM STRESS (PEAK) ---
+        peak_idx = np.argmax(stress_all) + 1  # Include the peak point itself
+        stress_raw = stress_all[:peak_idx]
+        strain_raw = strain_all[:peak_idx]
+        disp_mm = disp_all[:peak_idx]
 
         with st.expander(f"Adjust & Preview: {file.name}", expanded=False):
             ctrl_col, prev_col = st.columns([1, 2])
@@ -209,8 +211,8 @@ if uploaded_files:
                     "Modulus (E) [MPa]": round(E_slope * 100, 1),
                     "Yield Stress [MPa]": round(y_stress, 2),
                     "Yield Strain [%]": round(y_strain, 2),
-                    "Stress @ Break [MPa]": round(stress_plot[-1], 2),
-                    "Strain @ Break [%]": round(strain_plot[-1], 2),
+                    "Stress @ Peak [MPa]": round(stress_plot[-1], 2),
+                    "Strain @ Peak [%]": round(strain_plot[-1], 2),
                     "Work Done [J]": round(work_j, 4),
                     "Toughness [MJ/m³]": round((work_j / (area * gauge_length * 1e-9)) / 1e6, 3)
                 })
