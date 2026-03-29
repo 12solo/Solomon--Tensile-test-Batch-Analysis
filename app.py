@@ -6,13 +6,13 @@ import matplotlib.pyplot as plt
 import io
 import re
 import requests
+import base64
 from PIL import Image
 from streamlit_drawable_canvas import st_canvas
 
 # --- 1. Page Configuration & Custom Font Styling ---
 st.set_page_config(page_title="Solomon Tensile Suite", layout="wide")
 
-# Injecting the requested CSS font style
 st.markdown("""
     <style>
     html, body, [class*="css"], .stMarkdown, .stText, .stButton, .stSelectbox, .stTable {
@@ -52,19 +52,15 @@ u_scale = scale_map[unit_input]
 
 apply_zeroing = st.sidebar.checkbox("Apply Toe-Compensation (Shift to 0,0)", value=True)
 
-# --- Plot Customization ---
 st.sidebar.header("🎨 Plot Customization")
 line_thickness = st.sidebar.slider("Line Thickness (Journal Plot)", 0.5, 5.0, 2.5, 0.5)
-legend_pos = st.sidebar.selectbox("Legend Position", 
-                                ["lower right", "upper right", "upper left", "lower left", "best", "outside"], 
-                                index=0)
+legend_pos = st.sidebar.selectbox("Legend Position", ["lower right", "upper right", "upper left", "lower left", "best", "outside"], index=0)
 
 auto_scale = st.sidebar.checkbox("Enable Auto-Scale", value=True)
 if not auto_scale:
     custom_x_max = st.sidebar.number_input("Manual X Max (Strain %)", value=100.0)
     custom_y_max = st.sidebar.number_input("Manual Y Max (Stress MPa)", value=50.0)
 
-# --- Helper: Name Cleaner ---
 def clean_label(name):
     return re.sub(r'\.(txt|csv|xlsx|xls)$', '', name, flags=re.IGNORECASE)
 
@@ -75,22 +71,36 @@ class DigitizedFile:
         self.df = df
     def getvalue(self): return None 
 
-# --- 5. Image Digitizer Module ---
+# --- 5. Image Digitizer Module (FIXED AREA) ---
 def image_digitizer_ui():
     st.subheader("🖼️ Plot Digitizer Mode")
     digitizer_file = st.file_uploader("Upload Plot Image", type=["png", "jpg", "jpeg"], key="digitizer_upload")
     if digitizer_file:
         img = Image.open(digitizer_file)
+        
+        # --- FIX: Proper image handling for st_canvas ---
+        buffered = io.BytesIO()
+        img.save(buffered, format="PNG")
+        img_str = base64.b64encode(buffered.getvalue()).decode()
+        bg_image_data = f"data:image/png;base64,{img_str}"
+        
         c1, c2 = st.columns([2, 1])
         with c2:
             st.info("Instructions:\n1. Origin (0,0)\n2. Max X Point\n3. Max Y Point\n4. Trace Curve")
             real_max_x = st.number_input("Real Max Strain (%)", value=10.0)
             real_max_y = st.number_input("Real Max Stress (MPa)", value=100.0)
         with c1:
+            # height calculation based on original image aspect ratio
+            h_calc = int(img.height * (800 / img.width))
             canvas_result = st_canvas(
-                fill_color="rgba(255, 165, 0, 0.3)", stroke_width=2, stroke_color="#ff0000",
-                background_image=img, height=img.height * (800 / img.width), width=800,
-                drawing_mode="point", key="canvas_digitizer",
+                fill_color="rgba(255, 165, 0, 0.3)", 
+                stroke_width=2, 
+                stroke_color="#ff0000",
+                background_image=Image.open(digitizer_file), # Fallback to PIL object
+                height=h_calc, 
+                width=800,
+                drawing_mode="point", 
+                key="canvas_digitizer",
             )
         if canvas_result.json_data is not None:
             df_points = pd.json_normalize(canvas_result.json_data["objects"])
@@ -194,7 +204,6 @@ if uploaded_files:
                     strain_plot, stress_plot = strain_raw, stress_raw
 
                 plot_data_storage[custom_name] = (strain_plot, stress_plot)
-                
                 fit_x = np.linspace(0, current_range[1] * 2, 20)
                 fit_y = E_slope * fit_x + (0 if apply_zeroing else intercept_y)
                 modulus_fit_storage[custom_name] = (fit_x, fit_y)
