@@ -150,7 +150,7 @@ if uploaded_files:
         b1, b2, b3, b4 = st.columns([2, 2, 2, 1])
         bulk_range = b1.slider("Global Modulus Range (%)", 0.0, 20.0, (0.2, 1.0), key="bulk_slider")
         bulk_method = b2.selectbox("Global Yield Method", ["Offset Method", "Departure from Linearity"], key="bulk_method")
-        bulk_val = b3.slider("Global Sensitivity/Offset (%)", 0.0, 2.0, 0.2, 0.05, key="bulk_val")
+        bulk_val = b3.slider("Global Sensitivity/Offset (%)", 0.0, 45.0, 0.2, 0.05, key="bulk_val")
         if b4.button("Apply to All"):
             for file in uploaded_files:
                 if file: 
