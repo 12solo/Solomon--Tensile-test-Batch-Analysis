@@ -264,7 +264,6 @@ if uploaded_files:
             fig_main.update_layout(template="simple_white", xaxis=dict(title="Strain (%)", range=[0, x_lim]), yaxis=dict(title="Stress (MPa)", range=[0, y_lim]), height=650)
             st.plotly_chart(fig_main, use_container_width=True)
         else:
-            # --- JOURNAL GRADE MATPLOTLIB ---
             plt.rcParams.update({
                 "font.family": "serif", "font.serif": ["Times New Roman"], "font.size": 12,
                 "axes.linewidth": 1.2, "xtick.direction": "in", "ytick.direction": "in",
@@ -275,17 +274,17 @@ if uploaded_files:
             for i, (name, data) in enumerate(plot_data_storage.items()):
                 ax.plot(data[0], data[1], label=name, color=distinct_20[i % 8], lw=line_thickness)
             
-            # Critical: Enforce 0,0 Start and remove padding
             ax.set_xbound(lower=0); ax.set_ybound(lower=0)
             if not auto_scale:
                 ax.set_xlim(0, custom_x_max); ax.set_ylim(0, custom_y_max)
             else:
                 ax.set_xlim(left=0); ax.set_ylim(bottom=0)
             
-            ax.margins(x=0, y=0) # Removes the gap between axis and data
+            ax.margins(x=0, y=0) 
             ax.set_xlabel('Strain (%)', fontweight='bold', labelpad=10)
             ax.set_ylabel('Stress (MPa)', fontweight='bold', labelpad=10)
             ax.spines['top'].set_visible(True); ax.spines['right'].set_visible(True)
+            ax.set_axisbelow(True)
             
             if legend_pos == "outside": ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', frameon=False)
             else: ax.legend(loc=legend_pos, frameon=False)
@@ -293,12 +292,30 @@ if uploaded_files:
             plt.tight_layout()
             st.pyplot(fig)
             
-            # Export high-res TIFF
-            tiff_buf = io.BytesIO()
-            fig.savefig(tiff_buf, format='tiff', dpi=600, compression='tiff_lzw')
-            st.download_button("📥 Download 600DPI TIFF (Journal Ready)", data=tiff_buf.getvalue(), file_name="Tensile_Plot_HighRes.tiff", mime="image/tiff")
+            # --- Robust TIFF Export ---
+            try:
+                img_buf = io.BytesIO()
+                # Save as PNG first in memory (always supported)
+                fig.savefig(img_buf, format='png', dpi=600)
+                img_buf.seek(0)
+                
+                # Convert to TIFF using Pillow (much safer for Streamlit Cloud)
+                pil_img = Image.open(img_buf)
+                tiff_buf = io.BytesIO()
+                pil_img.save(tiff_buf, format='TIFF', compression='tiff_lzw', dpi=(600, 600))
+                
+                st.download_button(
+                    "📥 Download 600DPI TIFF (Journal Ready)", 
+                    data=tiff_buf.getvalue(), 
+                    file_name="Tensile_Plot_HighRes.tiff", 
+                    mime="image/tiff"
+                )
+            except Exception as e:
+                st.error("TIFF conversion failed. Using PNG export instead.")
+                png_export = io.BytesIO()
+                fig.savefig(png_export, format='png', dpi=600)
+                st.download_button("📥 Download 600DPI PNG", data=png_export.getvalue(), file_name="Plot.png")
 
-        # --- 10. Comparison & 11. Stats (Rest of code remains unchanged) ---
         st.divider()
         st.subheader("⚖️ Batch Property Comparison")
         col_comp1, col_comp2 = st.columns([1, 2])
