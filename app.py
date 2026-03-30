@@ -317,4 +317,30 @@ if uploaded_files:
                 pil_img = Image.open(img_buf)
                 tiff_buf = io.BytesIO()
                 pil_img.save(tiff_buf, format='TIFF', compression='tiff_lzw', dpi=(600, 600))
-                st.download_button("📥 Download 600DPI TIFF (Journal Ready)", data=tiff_buf.getvalue(), file
+                st.download_button("📥 Download 600DPI TIFF (Journal Ready)", data=tiff_buf.getvalue(), file_name="HighRes_Journal_Plot.tiff", mime="image/tiff")
+            except:
+                st.error("TIFF conversion failed.")
+
+        # Batch property comparison and tables follow...
+        st.divider()
+        st.subheader("⚖️ Batch Property Comparison")
+        col_comp1, col_comp2 = st.columns([1, 2])
+        control_sample = col_comp1.selectbox("Select Control Sample", res_df["Sample"].tolist())
+        if control_sample:
+            baseline = res_df[res_df["Sample"] == control_sample].iloc[0]
+            comp_df = res_df.copy()
+            for col, base in [("Modulus (E) [MPa]", "Modulus (E) [MPa]"), ("Stress @ Peak [MPa]", "Stress @ Peak [MPa]"), ("Toughness [MJ/m³]", "Toughness [MJ/m³]")]:
+                comp_df[f"{col.split()[0]} Δ (%)"] = ((pd.to_numeric(comp_df[col], errors='coerce') - float(baseline[base])) / float(baseline[base])) * 100
+            st.dataframe(comp_df.style.format("{:+.1f}%", subset=[c for c in comp_df.columns if "Δ" in c]).background_gradient(cmap="RdYlGn", subset=[c for c in comp_df.columns if "Δ" in c]), hide_index=True)
+
+        st.subheader(f"📊 Batch Summary Statistics (n={len(res_df)})")
+        numeric_cols = ["Modulus (E) [MPa]", "Yield Stress [MPa]", "Yield Strain [%]", "Stress @ Peak [MPa]", "Strain @ Peak [%]", "Toughness [MJ/m³]"]
+        st.table(res_df[numeric_cols].apply(pd.to_numeric, errors='coerce').agg(['mean', 'std']).T.style.format("{:.2f}"))
+
+        st.subheader("📋 Complete Individual Test Records")
+        st.dataframe(res_df, hide_index=True, use_container_width=True)
+
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            res_df.to_excel(writer, sheet_name='Samples', index=False)
+        st.download_button(label="📥 Download Full Excel Report", data=output.getvalue(), file_name=f"{project_name}_Report.xlsx")
