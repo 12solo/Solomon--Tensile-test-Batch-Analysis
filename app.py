@@ -61,10 +61,12 @@ if not auto_scale:
     custom_x_max = st.sidebar.number_input("Manual X Max (Strain %)", value=10.0)
     custom_y_max = st.sidebar.number_input("Manual Y Max (Stress MPa)", value=50.0)
 
-# Default Publication-Grade Palette
-distinct_journal = [
-    '#000000', '#E6194B', '#3CB44B', '#4363D8', '#F58231', 
-    '#911EB4', '#42D4F4', '#F032E6', '#BDB76B', '#000080'
+# --- 20 DISTINCT COLORS FOR PUBLICATIONS ---
+distinct_20 = [
+    '#000000', '#e6194b', '#3cb44b', '#ffe119', '#4363d8', '#f58231', 
+    '#911eb4', '#46f0f0', '#f032e6', '#bcfec1', '#fabebe', '#008080', 
+    '#e6beff', '#9a6324', '#fffac8', '#800000', '#aaffc3', '#808000', 
+    '#ffd8b1', '#000075'
 ]
 
 def clean_label(name):
@@ -181,8 +183,8 @@ if uploaded_files:
         f_col = st.sidebar.selectbox(f"Force/Stress ({file.name})", cols, index=cols.index(def_f), key=f"f_{file.name}")
         d_col = st.sidebar.selectbox(f"Disp/Strain ({file.name})", cols, index=cols.index(def_d), key=f"d_{file.name}")
         
-        # Color Adjustment Feature
-        chosen_color = st.sidebar.color_picker(f"Color: {clean_label(file.name)}", value=distinct_journal[idx % len(distinct_journal)], key=f"color_{file.name}")
+        # Color Adjustment Feature with 20 distinct default colors
+        chosen_color = st.sidebar.color_picker(f"Color: {clean_label(file.name)}", value=distinct_20[idx % 20], key=f"color_{file.name}")
 
         df_clean = df[[f_col, d_col]].apply(pd.to_numeric, errors='coerce').dropna()
         
