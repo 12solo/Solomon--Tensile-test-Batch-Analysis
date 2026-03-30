@@ -53,13 +53,19 @@ u_scale = scale_map[unit_input]
 apply_zeroing = st.sidebar.checkbox("Apply Toe-Compensation (Shift to 0,0)", value=True)
 
 st.sidebar.header("🎨 Plot Customization")
-line_thickness = st.sidebar.slider("Line Thickness (Journal Plot)", 0.5, 5.0, 1.5, 0.5)
+line_thickness = st.sidebar.slider("Line Thickness (Journal Plot)", 0.5, 5.0, 2.0, 0.5)
 legend_pos = st.sidebar.selectbox("Legend Position", ["lower right", "upper right", "upper left", "lower left", "best", "outside"], index=0)
 
 auto_scale = st.sidebar.checkbox("Enable Auto-Scale", value=True)
 if not auto_scale:
     custom_x_max = st.sidebar.number_input("Manual X Max (Strain %)", value=10.0)
     custom_y_max = st.sidebar.number_input("Manual Y Max (Stress MPa)", value=50.0)
+
+# Default Publication-Grade Palette
+distinct_journal = [
+    '#000000', '#E6194B', '#3CB44B', '#4363D8', '#F58231', 
+    '#911EB4', '#42D4F4', '#F032E6', '#BDB76B', '#000080'
+]
 
 def clean_label(name):
     return re.sub(r'\.(txt|csv|xlsx|xls)$', '', name, flags=re.IGNORECASE)
@@ -144,6 +150,9 @@ if uploaded_files:
     all_results = []
     plot_data_storage = {} 
     modulus_fit_storage = {} 
+    sample_color_map = {}
+
+    st.sidebar.header("🎨 Manual Sample Colors")
 
     st.subheader("🛠️ Sample Configuration & Modulus Validation")
     with st.expander("⚡ Bulk Update (Apply to All Samples)"):
@@ -159,7 +168,7 @@ if uploaded_files:
                     st.session_state[f"val_{file.name}"] = bulk_val
             st.rerun()
 
-    for file in uploaded_files:
+    for idx, file in enumerate(uploaded_files):
         if file is None: continue
         df = smart_load(file)
         if df is None or df.empty: continue
@@ -172,6 +181,9 @@ if uploaded_files:
         f_col = st.sidebar.selectbox(f"Force/Stress ({file.name})", cols, index=cols.index(def_f), key=f"f_{file.name}")
         d_col = st.sidebar.selectbox(f"Disp/Strain ({file.name})", cols, index=cols.index(def_d), key=f"d_{file.name}")
         
+        # Color Adjustment Feature
+        chosen_color = st.sidebar.color_picker(f"Color: {clean_label(file.name)}", value=distinct_journal[idx % len(distinct_journal)], key=f"color_{file.name}")
+
         df_clean = df[[f_col, d_col]].apply(pd.to_numeric, errors='coerce').dropna()
         
         if "Digitized" in str(file.name):
@@ -190,6 +202,8 @@ if uploaded_files:
             custom_name = st.text_input("Scientific Display Name", value=clean_label(file.name), key=f"name_{file.name}")
             c1, c2, c3, prev_col = st.columns([1.2, 1.2, 1.2, 3])
             
+            sample_color_map[custom_name] = chosen_color
+
             current_range = c1.slider("Modulus Fit Range (%)", 0.0, 20.0, (0.2, 1.0), key=f"range_{file.name}")
             yield_method = c2.selectbox("Yield Method", ["Offset Method", "Departure from Linearity"], key=f"meth_{file.name}")
             yield_val = c3.slider("Sensitivity/Offset (%)", 0.0, 45.0, 0.2, 0.05, key=f"val_{file.name}")
@@ -230,7 +244,7 @@ if uploaded_files:
                     y_stress, y_strain, mat_class = "N/A", "N/A", "Brittle"
 
                 fig_mini = go.Figure()
-                fig_mini.add_trace(go.Scatter(x=strain_plot, y=stress_plot, name="Data", line=dict(color='#1f77b4')))
+                fig_mini.add_trace(go.Scatter(x=strain_plot, y=stress_plot, name="Data", line=dict(color=chosen_color)))
                 fig_mini.add_trace(go.Scatter(x=fit_x, y=fit_y, name="Modulus Fit", line=dict(dash='dot', color='#d62728')))
                 
                 if y_stress != "N/A":
@@ -258,8 +272,6 @@ if uploaded_files:
         st.divider()
         view_mode = st.radio("Select Visualization Mode", ["Interactive (Cursor Inspection)", "Static (High-Res Journal TIFF)"], horizontal=True)
 
-        distinct_20 = ['#000000', '#FF0000', '#0000FF', '#008000', '#A52A2A', '#800080', '#FF8C00', '#4B0082']
-
         # Construct common Matplotlib plot for High-Res
         plt.rcParams.update({
             "font.family": "serif", "font.serif": ["Times New Roman"], "font.size": 12,
@@ -267,8 +279,8 @@ if uploaded_files:
             "xtick.major.size": 6, "ytick.major.size": 6, "xtick.top": True, "ytick.right": True
         })
         fig_journal, ax_journal = plt.subplots(figsize=(7, 6), dpi=600)
-        for i, (name, data) in enumerate(plot_data_storage.items()):
-            ax_journal.plot(data[0], data[1], label=name, color=distinct_20[i % 8], lw=line_thickness)
+        for name, data in plot_data_storage.items():
+            ax_journal.plot(data[0], data[1], label=name, color=sample_color_map.get(name, '#000000'), lw=line_thickness)
         
         ax_journal.set_xbound(lower=0); ax_journal.set_ybound(lower=0)
         if not auto_scale:
@@ -284,8 +296,9 @@ if uploaded_files:
 
         if view_mode == "Interactive (Cursor Inspection)":
             fig_main = go.Figure()
-            for i, (name, data) in enumerate(plot_data_storage.items()):
-                fig_main.add_trace(go.Scatter(x=data[0], y=data[1], name=name, mode='lines', line=dict(width=line_thickness, color=distinct_20[i % 8])))
+            for name, data in plot_data_storage.items():
+                fig_main.add_trace(go.Scatter(x=data[0], y=data[1], name=name, mode='lines', 
+                                             line=dict(width=line_thickness, color=sample_color_map.get(name, '#000000'))))
             x_lim = res_df["Strain @ Peak [%]"].max() * 1.05 if auto_scale else custom_x_max
             y_lim = res_df["Stress @ Peak [MPa]"].max() * 1.1 if auto_scale else custom_y_max
             fig_main.update_layout(template="simple_white", xaxis=dict(title="Strain (%)", range=[0, x_lim]), yaxis=dict(title="Stress (MPa)", range=[0, y_lim]), height=650)
