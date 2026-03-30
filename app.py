@@ -192,7 +192,7 @@ if uploaded_files:
             
             current_range = c1.slider("Modulus Fit Range (%)", 0.0, 20.0, (0.2, 1.0), key=f"range_{file.name}")
             yield_method = c2.selectbox("Yield Method", ["Offset Method", "Departure from Linearity"], key=f"meth_{file.name}")
-            yield_val = c3.slider("Sensitivity/Offset (%)", 0.0, 2.0, 0.2, 0.05, key=f"val_{file.name}")
+            yield_val = c3.slider("Sensitivity/Offset (%)", 0.0, 50, 0.2, 0.05, key=f"val_{file.name}")
             
             mask_e = (strain_raw >= current_range[0]) & (strain_raw <= current_range[1])
             
@@ -204,6 +204,11 @@ if uploaded_files:
                     strain_plot = strain_raw - shift
                     mask_pos = (strain_plot >= 0)
                     strain_plot, stress_plot = strain_plot[mask_pos], stress_raw[mask_pos]
+                    
+                    # FORCE 0,0 START: Prepend 0 to both arrays if not already present
+                    if len(strain_plot) > 0 and strain_plot[0] > 0:
+                        strain_plot = np.insert(strain_plot, 0, 0.0)
+                        stress_plot = np.insert(stress_plot, 0, 0.0)
                 else:
                     strain_plot, stress_plot = strain_raw, stress_raw
 
@@ -228,10 +233,7 @@ if uploaded_files:
                 fig_mini = go.Figure()
                 fig_mini.add_trace(go.Scatter(x=strain_plot, y=stress_plot, name="Data", line=dict(color='#1f77b4')))
                 fig_mini.add_trace(go.Scatter(x=fit_x, y=fit_y, name="Modulus Fit", line=dict(dash='dot', color='#d62728')))
-                if y_stress != "N/A":
-                    fig_mini.add_trace(go.Scatter(x=[y_strain], y=[y_stress], mode='markers', marker=dict(color='orange', size=10)))
-
-                fig_mini.update_layout(height=280, margin=dict(l=0, r=0, t=0, b=0), template="plotly_white", showlegend=False)
+                fig_mini.update_layout(height=280, margin=dict(l=0, r=0, t=0, b=0), template="plotly_white", showlegend=False, xaxis=dict(range=[0, None]), yaxis=dict(range=[0, None]))
                 prev_col.plotly_chart(fig_mini, use_container_width=True)
 
                 try: work_j = np.trapezoid(stress_plot * area, (strain_plot/100 * gauge_length) / 1000.0)
@@ -264,26 +266,38 @@ if uploaded_files:
             fig_main.update_layout(template="simple_white", xaxis=dict(title="Strain (%)", range=[0, x_lim]), yaxis=dict(title="Stress (MPa)", range=[0, y_lim]), height=650)
             st.plotly_chart(fig_main, use_container_width=True)
         else:
+            # --- JOURNAL GRADE MATPLOTLIB ---
             plt.rcParams.update({
                 "font.family": "serif", "font.serif": ["Times New Roman"], "font.size": 12,
-                "axes.linewidth": 1.2, "xtick.direction": "in", "ytick.direction": "in",
-                "xtick.major.size": 6, "ytick.major.size": 6
+                "axes.linewidth": 1.5, # Consistent axis thickness
+                "xtick.direction": "in", "ytick.direction": "in",
+                "xtick.major.size": 6, "ytick.major.size": 6,
+                "xtick.top": True, "ytick.right": True # Box ticks
             })
             fig, ax = plt.subplots(figsize=(7, 6), dpi=600)
             
             for i, (name, data) in enumerate(plot_data_storage.items()):
                 ax.plot(data[0], data[1], label=name, color=distinct_20[i % 8], lw=line_thickness)
             
+            # --- PERFECT AXIS ALIGNMENT ---
+            # Remove any internal padding between data and axes
             ax.set_xbound(lower=0); ax.set_ybound(lower=0)
             if not auto_scale:
                 ax.set_xlim(0, custom_x_max); ax.set_ylim(0, custom_y_max)
             else:
-                ax.set_xlim(left=0); ax.set_ylim(bottom=0)
+                ax.set_xlim(0, res_df["Strain @ Peak [%]"].max() * 1.05)
+                ax.set_ylim(0, res_df["Stress @ Peak [MPa]"].max() * 1.1)
             
-            ax.margins(x=0, y=0) 
+            ax.xaxis.set_ticks_position('both')
+            ax.yaxis.set_ticks_position('both')
+            
+            # Make all border lines (spines) identical
+            for spine in ax.spines.values():
+                spine.set_linewidth(1.5)
+                spine.set_visible(True)
+
             ax.set_xlabel('Strain (%)', fontweight='bold', labelpad=10)
             ax.set_ylabel('Stress (MPa)', fontweight='bold', labelpad=10)
-            ax.spines['top'].set_visible(True); ax.spines['right'].set_visible(True)
             ax.set_axisbelow(True)
             
             if legend_pos == "outside": ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', frameon=False)
@@ -295,27 +309,16 @@ if uploaded_files:
             # --- Robust TIFF Export ---
             try:
                 img_buf = io.BytesIO()
-                # Save as PNG first in memory (always supported)
-                fig.savefig(img_buf, format='png', dpi=600)
+                fig.savefig(img_buf, format='png', dpi=600, bbox_inches='tight')
                 img_buf.seek(0)
-                
-                # Convert to TIFF using Pillow (much safer for Streamlit Cloud)
                 pil_img = Image.open(img_buf)
                 tiff_buf = io.BytesIO()
                 pil_img.save(tiff_buf, format='TIFF', compression='tiff_lzw', dpi=(600, 600))
-                
-                st.download_button(
-                    "📥 Download 600DPI TIFF (Journal Ready)", 
-                    data=tiff_buf.getvalue(), 
-                    file_name="Tensile_Plot_HighRes.tiff", 
-                    mime="image/tiff"
-                )
-            except Exception as e:
-                st.error("TIFF conversion failed. Using PNG export instead.")
-                png_export = io.BytesIO()
-                fig.savefig(png_export, format='png', dpi=600)
-                st.download_button("📥 Download 600DPI PNG", data=png_export.getvalue(), file_name="Plot.png")
+                st.download_button("📥 Download 600DPI TIFF (Journal Ready)", data=tiff_buf.getvalue(), file_name="HighRes_Journal_Plot.tiff", mime="image/tiff")
+            except:
+                st.error("TIFF conversion failed. Download PDF instead?")
 
+        # (Rest of UI components remain unchanged)
         st.divider()
         st.subheader("⚖️ Batch Property Comparison")
         col_comp1, col_comp2 = st.columns([1, 2])
