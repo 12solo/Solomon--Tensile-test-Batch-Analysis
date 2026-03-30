@@ -190,10 +190,11 @@ if uploaded_files:
             
             if np.sum(mask_e) >= 3:
                 E_slope, intercept_y = np.polyfit(strain_raw[mask_e], stress_raw[mask_e], 1)
+                
                 if apply_zeroing:
                     shift = -intercept_y / E_slope
                     strain_plot = strain_raw - shift
-                    mask_pos = strain_plot >= 0
+                    mask_pos = (strain_plot >= 0)
                     strain_plot, stress_plot = strain_plot[mask_pos], stress_raw[mask_pos]
                 else:
                     strain_plot, stress_plot = strain_raw, stress_raw
@@ -209,16 +210,27 @@ if uploaded_files:
                 fig_mini.update_layout(height=250, margin=dict(l=0, r=0, t=0, b=0), template="plotly_white", showlegend=False)
                 prev_col.plotly_chart(fig_mini, use_container_width=True)
 
+                # --- YIELD DETECTION & MATERIAL CLASS ---
                 offset_line = E_slope * (strain_plot - 0.2)
-                idx_yield = np.where((stress_plot - offset_line) < 0)[0]
-                y_stress = stress_plot[idx_yield[0]] if len(idx_yield) > 0 else np.nan
-                y_strain = strain_plot[idx_yield[0]] if len(idx_yield) > 0 else np.nan
+                idx_yield = np.where(stress_plot < offset_line)[0]
+                
+                if len(idx_yield) > 0:
+                    y_stress = round(stress_plot[idx_yield[0]], 2)
+                    y_strain = round(strain_plot[idx_yield[0]], 2)
+                    mat_class = "Ductile"
+                else:
+                    y_stress = "N/A"
+                    y_strain = "N/A"
+                    mat_class = "Brittle"
+
                 try: work_j = np.trapezoid(stress_plot * area, (strain_plot/100 * gauge_length) / 1000.0)
                 except: work_j = np.trapz(stress_plot * area, (strain_plot/100 * gauge_length) / 1000.0)
                 
                 all_results.append({
-                    "Sample": custom_name, "Modulus (E) [MPa]": round(E_slope * 100, 1),
-                    "Yield Stress [MPa]": round(y_stress, 2), "Yield Strain [%]": round(y_strain, 2),
+                    "Sample": custom_name, 
+                    "Class": mat_class,
+                    "Modulus (E) [MPa]": round(E_slope * 100, 1),
+                    "Yield Stress [MPa]": y_stress, "Yield Strain [%]": y_strain,
                     "Stress @ Peak [MPa]": round(stress_plot[-1], 2), "Strain @ Peak [%]": round(strain_plot[-1], 2),
                     "Work Done [J]": round(work_j, 4), "Toughness [MJ/m³]": round((work_j / (area * gauge_length * 1e-9)) / 1e6, 3)
                 })
@@ -231,7 +243,6 @@ if uploaded_files:
         st.divider()
         view_mode = st.radio("Select Visualization Mode", ["Interactive (Cursor Inspection)", "Static (High-Res Journal TIFF)"], horizontal=True)
 
-        # --- 20 DISTINCT COLORS ---
         distinct_20 = [
             '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', 
             '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf',
@@ -278,7 +289,7 @@ if uploaded_files:
             else: ax.legend(loc=legend_pos, frameon=False, fontsize=9)
             st.pyplot(fig)
 
-        # --- 10. Batch Comparison (FIXED KEYERROR) ---
+        # --- 10. Batch Comparison ---
         st.divider()
         st.subheader("⚖️ Batch Property Comparison")
         col_comp1, col_comp2 = st.columns([1, 2])
@@ -288,16 +299,15 @@ if uploaded_files:
             baseline = res_df[res_df["Sample"] == control_sample].iloc[0]
             comp_df = res_df.copy()
             
-            # Map the exact keys to avoid KeyError
-            comp_df["Modulus Δ (%)"] = ((comp_df["Modulus (E) [MPa]"] - baseline["Modulus (E) [MPa]"]) / baseline["Modulus (E) [MPa]"]) * 100
-            comp_df["Strength Δ (%)"] = ((comp_df["Stress @ Peak [MPa]"] - baseline["Stress @ Peak [MPa]"]) / baseline["Stress @ Peak [MPa]"]) * 100
-            comp_df["Toughness Δ (%)"] = ((comp_df["Toughness [MJ/m³]"] - baseline["Toughness [MJ/m³]"]) / baseline["Toughness [MJ/m³]"]) * 100
+            for col in ["Modulus (E) [MPa]", "Stress @ Peak [MPa]", "Toughness [MJ/m³]"]:
+                comp_df[f"{col.split(' ')[0]} Δ (%)"] = pd.to_numeric(comp_df[col], errors='coerce')
+                b_val = pd.to_numeric(baseline[col], errors='coerce')
+                comp_df[f"{col.split(' ')[0]} Δ (%)"] = ((comp_df[f"{col.split(' ')[0]} Δ (%)"] - b_val) / b_val) * 100
             
-            delta_cols = ["Modulus Δ (%)", "Strength Δ (%)", "Toughness Δ (%)"]
-            display_cols = ["Sample", "Modulus (E) [MPa]", "Modulus Δ (%)", "Stress @ Peak [MPa]", "Strength Δ (%)", "Toughness [MJ/m³]", "Toughness Δ (%)"]
-            
+            delta_cols = [c for c in comp_df.columns if "Δ" in c]
             st.dataframe(
-                comp_df[display_cols].style.format("{:+.1f}%", subset=delta_cols)
+                comp_df[["Sample", "Class", "Modulus (E) [MPa]", "Modulus Δ (%)", "Stress @ Peak [MPa]", "Strength Δ (%)", "Toughness [MJ/m³]", "Toughness Δ (%)"]]
+                .style.format("{:+.1f}%", subset=delta_cols)
                 .background_gradient(subset=delta_cols, cmap="RdYlGn"),
                 hide_index=True, use_container_width=True
             )
@@ -305,10 +315,10 @@ if uploaded_files:
         # --- 11. Final Statistics ---
         st.divider()
         st.subheader(f"📊 Batch Summary Statistics (n={len(res_df)})")
-        stats_df = res_df.drop(columns='Sample').agg(['mean', 'std', 'count']).T
+        numeric_res = res_df.apply(pd.to_numeric, errors='coerce').drop(columns='Sample')
+        stats_df = numeric_res.agg(['mean', 'std', 'count']).T
         st.table(stats_df.style.format("{:.2f}"))
         
-        # Excel Export
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
             res_df.to_excel(writer, sheet_name='Samples', index=False)
