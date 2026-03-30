@@ -150,7 +150,7 @@ if uploaded_files:
         b1, b2, b3, b4 = st.columns([2, 2, 2, 1])
         bulk_range = b1.slider("Global Modulus Range (%)", 0.0, 20.0, (0.2, 1.0), key="bulk_slider")
         bulk_method = b2.selectbox("Global Yield Method", ["Offset Method", "Departure from Linearity"], key="bulk_method")
-        bulk_val = b3.slider("Global Sensitivity/Offset (%)", 0.0, 2.0, 0.2, 0.05, key="bulk_val")
+        bulk_val = b3.slider("Global Sensitivity/Offset (%)", 0.0, 45.0, 0.2, 0.05, key="bulk_val") # ADJUSTED TO 45.0
         if b4.button("Apply to All"):
             for file in uploaded_files:
                 if file: 
@@ -192,7 +192,7 @@ if uploaded_files:
             
             current_range = c1.slider("Modulus Fit Range (%)", 0.0, 20.0, (0.2, 1.0), key=f"range_{file.name}")
             yield_method = c2.selectbox("Yield Method", ["Offset Method", "Departure from Linearity"], key=f"meth_{file.name}")
-            yield_val = c3.slider("Sensitivity/Offset (%)", 0.0, 2.0, 0.2, 0.05, key=f"val_{file.name}")
+            yield_val = c3.slider("Sensitivity/Offset (%)", 0.0, 45.0, 0.2, 0.05, key=f"val_{file.name}") # ADJUSTED TO 45.0
             
             mask_e = (strain_raw >= current_range[0]) & (strain_raw <= current_range[1])
             
@@ -205,7 +205,6 @@ if uploaded_files:
                     mask_pos = (strain_plot >= 0)
                     strain_plot, stress_plot = strain_plot[mask_pos], stress_raw[mask_pos]
                     
-                    # FORCE 0,0 START: Prepend 0 to both arrays if not already present
                     if len(strain_plot) > 0 and strain_plot[0] > 0:
                         strain_plot = np.insert(strain_plot, 0, 0.0)
                         stress_plot = np.insert(stress_plot, 0, 0.0)
@@ -230,9 +229,19 @@ if uploaded_files:
                 else:
                     y_stress, y_strain, mat_class = "N/A", "N/A", "Brittle"
 
+                # --- LIVE INDICATOR PREVIEW ---
                 fig_mini = go.Figure()
                 fig_mini.add_trace(go.Scatter(x=strain_plot, y=stress_plot, name="Data", line=dict(color='#1f77b4')))
                 fig_mini.add_trace(go.Scatter(x=fit_x, y=fit_y, name="Modulus Fit", line=dict(dash='dot', color='#d62728')))
+                
+                if y_stress != "N/A":
+                    fig_mini.add_trace(go.Scatter(
+                        x=[y_strain], y=[y_stress], 
+                        mode='markers', 
+                        name='Yield Point Indicator', 
+                        marker=dict(color='orange', size=12, symbol='circle-open-dot')
+                    ))
+
                 fig_mini.update_layout(height=280, margin=dict(l=0, r=0, t=0, b=0), template="plotly_white", showlegend=False, xaxis=dict(range=[0, None]), yaxis=dict(range=[0, None]))
                 prev_col.plotly_chart(fig_mini, use_container_width=True)
 
@@ -261,6 +270,17 @@ if uploaded_files:
             fig_main = go.Figure()
             for i, (name, data) in enumerate(plot_data_storage.items()):
                 fig_main.add_trace(go.Scatter(x=data[0], y=data[1], name=name, mode='lines', line=dict(width=line_thickness, color=distinct_20[i % 8])))
+                # Also include markers in interactive mode if desired
+                sample_res = res_df[res_df["Sample"] == name].iloc[0]
+                if sample_res["Yield Stress [MPa]"] != "N/A":
+                     fig_main.add_trace(go.Scatter(
+                         x=[sample_res["Yield Strain [%]"]], 
+                         y=[sample_res["Yield Stress [MPa]"]], 
+                         mode='markers', 
+                         marker=dict(color=distinct_20[i % 8], symbol='circle-open', size=10),
+                         showlegend=False
+                     ))
+
             x_lim = res_df["Strain @ Peak [%]"].max() * 1.05 if auto_scale else custom_x_max
             y_lim = res_df["Stress @ Peak [MPa]"].max() * 1.1 if auto_scale else custom_y_max
             fig_main.update_layout(template="simple_white", xaxis=dict(title="Strain (%)", range=[0, x_lim]), yaxis=dict(title="Stress (MPa)", range=[0, y_lim]), height=650)
@@ -269,18 +289,21 @@ if uploaded_files:
             # --- JOURNAL GRADE MATPLOTLIB ---
             plt.rcParams.update({
                 "font.family": "serif", "font.serif": ["Times New Roman"], "font.size": 12,
-                "axes.linewidth": 1.5, # Consistent axis thickness
+                "axes.linewidth": 1.5,
                 "xtick.direction": "in", "ytick.direction": "in",
                 "xtick.major.size": 6, "ytick.major.size": 6,
-                "xtick.top": True, "ytick.right": True # Box ticks
+                "xtick.top": True, "ytick.right": True
             })
             fig, ax = plt.subplots(figsize=(7, 6), dpi=600)
             
             for i, (name, data) in enumerate(plot_data_storage.items()):
                 ax.plot(data[0], data[1], label=name, color=distinct_20[i % 8], lw=line_thickness)
+                # Static marker
+                sample_res = res_df[res_df["Sample"] == name].iloc[0]
+                if sample_res["Yield Stress [MPa]"] != "N/A":
+                    ax.scatter(sample_res["Yield Strain [%]"], sample_res["Yield Stress [MPa]"], 
+                               facecolors='none', edgecolors=distinct_20[i % 8], s=80, lw=1.5, zorder=5)
             
-            # --- PERFECT AXIS ALIGNMENT ---
-            # Remove any internal padding between data and axes
             ax.set_xbound(lower=0); ax.set_ybound(lower=0)
             if not auto_scale:
                 ax.set_xlim(0, custom_x_max); ax.set_ylim(0, custom_y_max)
@@ -291,7 +314,6 @@ if uploaded_files:
             ax.xaxis.set_ticks_position('both')
             ax.yaxis.set_ticks_position('both')
             
-            # Make all border lines (spines) identical
             for spine in ax.spines.values():
                 spine.set_linewidth(1.5)
                 spine.set_visible(True)
@@ -306,7 +328,6 @@ if uploaded_files:
             plt.tight_layout()
             st.pyplot(fig)
             
-            # --- Robust TIFF Export ---
             try:
                 img_buf = io.BytesIO()
                 fig.savefig(img_buf, format='png', dpi=600, bbox_inches='tight')
@@ -316,9 +337,9 @@ if uploaded_files:
                 pil_img.save(tiff_buf, format='TIFF', compression='tiff_lzw', dpi=(600, 600))
                 st.download_button("📥 Download 600DPI TIFF (Journal Ready)", data=tiff_buf.getvalue(), file_name="HighRes_Journal_Plot.tiff", mime="image/tiff")
             except:
-                st.error("TIFF conversion failed. Download PDF instead?")
+                st.error("TIFF conversion failed.")
 
-        # (Rest of UI components remain unchanged)
+        # Comparison Analysis
         st.divider()
         st.subheader("⚖️ Batch Property Comparison")
         col_comp1, col_comp2 = st.columns([1, 2])
