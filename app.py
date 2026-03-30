@@ -147,11 +147,16 @@ if uploaded_files:
 
     st.subheader("🛠️ Sample Configuration & Modulus Validation")
     with st.expander("⚡ Bulk Update (Apply to All Samples)"):
-        b1, b2 = st.columns([3, 1])
-        bulk_range = b1.slider("Select Global Modulus Range (%)", 0.0, 20.0, (0.2, 1.0), key="bulk_slider")
-        if b2.button("Apply to All"):
+        b1, b2, b3, b4 = st.columns([2, 2, 2, 1])
+        bulk_range = b1.slider("Global Modulus Range (%)", 0.0, 20.0, (0.2, 1.0), key="bulk_slider")
+        bulk_method = b2.selectbox("Global Yield Method", ["Offset Method", "Departure from Linearity"], key="bulk_method")
+        bulk_val = b3.slider("Global Sensitivity/Offset (%)", 0.0, 2.0, 0.2, 0.05, key="bulk_val")
+        if b4.button("Apply to All"):
             for file in uploaded_files:
-                if file: st.session_state[f"range_{file.name}"] = bulk_range
+                if file: 
+                    st.session_state[f"range_{file.name}"] = bulk_range
+                    st.session_state[f"meth_{file.name}"] = bulk_method
+                    st.session_state[f"val_{file.name}"] = bulk_val
             st.rerun()
 
     for file in uploaded_files:
@@ -184,8 +189,12 @@ if uploaded_files:
 
         with st.expander(f"Adjust & Preview: {file.name}", expanded=False):
             custom_name = st.text_input("Scientific Display Name", value=clean_label(file.name), key=f"name_{file.name}")
-            ctrl_col, prev_col = st.columns([1, 2])
-            current_range = ctrl_col.slider("Modulus Fit Range (%)", 0.0, 20.0, (0.2, 1.0), key=f"range_{file.name}")
+            c1, c2, c3, prev_col = st.columns([1.2, 1.2, 1.2, 3])
+            
+            current_range = c1.slider("Modulus Fit Range (%)", 0.0, 20.0, (0.2, 1.0), key=f"range_{file.name}")
+            yield_method = c2.selectbox("Yield Method", ["Offset Method", "Departure from Linearity"], key=f"meth_{file.name}")
+            yield_val = c3.slider("Sensitivity/Offset (%)", 0.0, 2.0, 0.2, 0.05, key=f"val_{file.name}")
+            
             mask_e = (strain_raw >= current_range[0]) & (strain_raw <= current_range[1])
             
             if np.sum(mask_e) >= 3:
@@ -204,38 +213,44 @@ if uploaded_files:
                 fit_y = E_slope * fit_x + (0 if apply_zeroing else intercept_y)
                 modulus_fit_storage[custom_name] = (fit_x, fit_y)
 
-                fig_mini = go.Figure()
-                fig_mini.add_trace(go.Scatter(x=strain_plot, y=stress_plot, name="Data", line=dict(color='#1f77b4')))
-                fig_mini.add_trace(go.Scatter(x=fit_x, y=fit_y, name="Fit", line=dict(dash='dot', color='#d62728')))
-                fig_mini.update_layout(height=250, margin=dict(l=0, r=0, t=0, b=0), template="plotly_white", showlegend=False)
-                prev_col.plotly_chart(fig_mini, use_container_width=True)
+                # --- YIELD DETECTION LOGIC ---
+                if yield_method == "Offset Method":
+                    offset_line = E_slope * (strain_plot - yield_val)
+                    idx_yield = np.where(stress_plot < offset_line)[0]
+                else: # Departure from Linearity
+                    theoretical_stress = E_slope * strain_plot + (0 if apply_zeroing else intercept_y)
+                    deviation = (theoretical_stress - stress_plot) / theoretical_stress
+                    idx_yield = np.where(deviation > (yield_val/10))[0] # sensitivity scaled
 
-                # --- YIELD DETECTION & MATERIAL CLASS ---
-                offset_line = E_slope * (strain_plot - 0.2)
-                idx_yield = np.where(stress_plot < offset_line)[0]
-                
                 if len(idx_yield) > 0:
                     y_stress = round(stress_plot[idx_yield[0]], 2)
                     y_strain = round(strain_plot[idx_yield[0]], 2)
                     mat_class = "Ductile"
                 else:
-                    y_stress = "N/A"
-                    y_strain = "N/A"
-                    mat_class = "Brittle"
+                    y_stress, y_strain, mat_class = "N/A", "N/A", "Brittle"
+
+                fig_mini = go.Figure()
+                fig_mini.add_trace(go.Scatter(x=strain_plot, y=stress_plot, name="Data", line=dict(color='#1f77b4')))
+                fig_mini.add_trace(go.Scatter(x=fit_x, y=fit_y, name="Modulus Fit", line=dict(dash='dot', color='#d62728')))
+                
+                if y_stress != "N/A":
+                    fig_mini.add_trace(go.Scatter(x=[y_strain], y=[y_stress], mode='markers', name='Yield Point', marker=dict(color='orange', size=12, symbol='circle-open-dot')))
+
+                fig_mini.update_layout(height=280, margin=dict(l=0, r=0, t=0, b=0), template="plotly_white", showlegend=False)
+                prev_col.plotly_chart(fig_mini, use_container_width=True)
 
                 try: work_j = np.trapezoid(stress_plot * area, (strain_plot/100 * gauge_length) / 1000.0)
                 except: work_j = np.trapz(stress_plot * area, (strain_plot/100 * gauge_length) / 1000.0)
                 
                 all_results.append({
-                    "Sample": custom_name, 
-                    "Class": mat_class,
+                    "Sample": custom_name, "Class": mat_class,
                     "Modulus (E) [MPa]": round(E_slope * 100, 1),
                     "Yield Stress [MPa]": y_stress, "Yield Strain [%]": y_strain,
                     "Stress @ Peak [MPa]": round(stress_plot[-1], 2), "Strain @ Peak [%]": round(strain_plot[-1], 2),
                     "Work Done [J]": round(work_j, 4), "Toughness [MJ/m³]": round((work_j / (area * gauge_length * 1e-9)) / 1e6, 3)
                 })
             else:
-                ctrl_col.error("Insufficient points.")
+                c1.error("Insufficient points.")
 
     # --- 9. Final Reports & Visualizations ---
     if all_results:
@@ -243,120 +258,50 @@ if uploaded_files:
         st.divider()
         view_mode = st.radio("Select Visualization Mode", ["Interactive (Cursor Inspection)", "Static (High-Res Journal TIFF)"], horizontal=True)
 
-        distinct_20 = [
-            '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', 
-            '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf',
-            '#aec7e8', '#ffbb78', '#98df8a', '#ff9896', '#c5b0d5', 
-            '#c49c94', '#f7b6d2', '#c7c7c7', '#dbdb8d', '#9edae5'
-        ]
+        distinct_20 = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
 
         if view_mode == "Interactive (Cursor Inspection)":
             fig_main = go.Figure()
             for i, (name, data) in enumerate(plot_data_storage.items()):
-                color = distinct_20[i % 20]
-                fig_main.add_trace(go.Scatter(
-                    x=data[0], y=data[1], name=name, 
-                    mode='lines', line=dict(width=line_thickness, color=color),
-                    hovertemplate='<b>%{fullData.name}</b><br>Strain: %{x:.2f}%<br>Stress: %{y:.2f} MPa<extra></extra>'
-                ))
+                fig_main.add_trace(go.Scatter(x=data[0], y=data[1], name=name, mode='lines', line=dict(width=line_thickness, color=distinct_20[i % 10])))
             
             x_lim = res_df["Strain @ Peak [%]"].max() * 1.05 if auto_scale else custom_x_max
             y_lim = res_df["Stress @ Peak [MPa]"].max() * 1.1 if auto_scale else custom_y_max
-            fig_main.update_layout(
-                template="simple_white", 
-                xaxis=dict(title="Strain (%)", range=[0, x_lim], mirror=True, ticks='inside', showline=True, linecolor='black', linewidth=2), 
-                yaxis=dict(title="Stress (MPa)", range=[0, y_lim], mirror=True, ticks='inside', showline=True, linecolor='black', linewidth=2), 
-                hovermode="closest", height=650
-            )
+            fig_main.update_layout(template="simple_white", xaxis=dict(title="Strain (%)", range=[0, x_lim]), yaxis=dict(title="Stress (MPa)", range=[0, y_lim]), height=650)
             st.plotly_chart(fig_main, use_container_width=True)
-
         else:
-            plt.rcParams.update({"font.family": "serif", "font.serif": ["Times New Roman"], "font.size": 12, "axes.linewidth": 1.5, "xtick.direction": "in", "ytick.direction": "in"})
+            plt.rcParams.update({"font.family": "serif", "font.size": 12})
             fig, ax = plt.subplots(figsize=(9, 7))
             for i, (name, data) in enumerate(plot_data_storage.items()):
-                color = distinct_20[i % 20]
-                ax.plot(data[0], data[1], label=name, color=color, linestyle='-', lw=line_thickness)
-            
-            if auto_scale:
-                ax.set_xlim(0, res_df["Strain @ Peak [%]"].max() * 1.05)
-                ax.set_ylim(0, res_df["Stress @ Peak [MPa]"].max() * 1.1)
-            else:
-                ax.set_xlim(0, custom_x_max); ax.set_ylim(0, custom_y_max)
-
-            ax.set_xlabel('Strain (%)', fontweight='bold'); ax.set_ylabel('Stress (MPa)', fontweight='bold')
-            ax.spines['top'].set_visible(True); ax.spines['right'].set_visible(True)
-            if legend_pos == "outside": ax.legend(bbox_to_anchor=(1.02, 1), loc='upper left', frameon=False, fontsize=9)
-            else: ax.legend(loc=legend_pos, frameon=False, fontsize=9)
-            st.pyplot(fig)
+                ax.plot(data[0], data[1], label=name, color=distinct_20[i % 10], lw=line_thickness)
+            ax.set_xlabel('Strain (%)'); ax.set_ylabel('Stress (MPa)')
+            ax.legend(loc=legend_pos); st.pyplot(fig)
 
         # --- 10. Batch Comparison ---
         st.divider()
         st.subheader("⚖️ Batch Property Comparison")
         col_comp1, col_comp2 = st.columns([1, 2])
-        control_sample = col_comp1.selectbox(
-            "Select Control Sample (Baseline)", 
-            res_df["Sample"].tolist(),
-            key="baseline_selector_fixed"
-        )
+        control_sample = col_comp1.selectbox("Select Control Sample", res_df["Sample"].tolist())
         
         if control_sample:
             baseline = res_df[res_df["Sample"] == control_sample].iloc[0]
             comp_df = res_df.copy()
-            
-            # Map precise keys to avoid KeyError
-            comp_df["Modulus Δ (%)"] = pd.to_numeric(comp_df["Modulus (E) [MPa]"], errors='coerce')
-            b_mod = pd.to_numeric(baseline["Modulus (E) [MPa]"], errors='coerce')
-            comp_df["Modulus Δ (%)"] = ((comp_df["Modulus Δ (%)"] - b_mod) / b_mod) * 100
-
-            comp_df["Strength Δ (%)"] = pd.to_numeric(comp_df["Stress @ Peak [MPa]"], errors='coerce')
-            b_str = pd.to_numeric(baseline["Stress @ Peak [MPa]"], errors='coerce')
-            comp_df["Strength Δ (%)"] = ((comp_df["Strength Δ (%)"] - b_str) / b_str) * 100
-
-            comp_df["Toughness Δ (%)"] = pd.to_numeric(comp_df["Toughness [MJ/m³]"], errors='coerce')
-            b_tgh = pd.to_numeric(baseline["Toughness [MJ/m³]"], errors='coerce')
-            comp_df["Toughness Δ (%)"] = ((comp_df["Toughness Δ (%)"] - b_tgh) / b_tgh) * 100
-            
-            delta_cols = ["Modulus Δ (%)", "Strength Δ (%)", "Toughness Δ (%)"]
-            display_cols = ["Sample", "Class", "Modulus (E) [MPa]", "Modulus Δ (%)", "Stress @ Peak [MPa]", "Strength Δ (%)", "Toughness [MJ/m³]", "Toughness Δ (%)"]
-            
-            st.dataframe(
-                comp_df[display_cols].style.format("{:+.1f}%", subset=delta_cols)
-                .background_gradient(subset=delta_cols, cmap="RdYlGn"),
-                hide_index=True, use_container_width=True
-            )
+            for col, base in [("Modulus (E) [MPa]", "Modulus (E) [MPa]"), ("Stress @ Peak [MPa]", "Stress @ Peak [MPa]"), ("Toughness [MJ/m³]", "Toughness [MJ/m³]")]:
+                comp_df[f"{col.split()[0]} Δ (%)"] = ((pd.to_numeric(comp_df[col], errors='coerce') - float(baseline[base])) / float(baseline[base])) * 100
+            st.dataframe(comp_df.style.format("{:+.1f}%", subset=[c for c in comp_df.columns if "Δ" in c]).background_gradient(cmap="RdYlGn", subset=[c for c in comp_df.columns if "Δ" in c]), hide_index=True)
 
         # --- 11. Final Statistics ---
         st.divider()
         st.subheader(f"📊 Batch Summary Statistics (n={len(res_df)})")
-        numeric_cols = ["Modulus (E) [MPa]", "Yield Stress [MPa]", "Yield Strain [%]", "Stress @ Peak [MPa]", "Strain @ Peak [%]", "Work Done [J]", "Toughness [MJ/m³]"]
-        numeric_res = res_df[numeric_cols].apply(pd.to_numeric, errors='coerce')
-        stats_df = numeric_res.agg(['mean', 'std', 'count']).T
-        st.table(stats_df.style.format("{:.2f}"))
+        numeric_cols = ["Modulus (E) [MPa]", "Yield Stress [MPa]", "Yield Strain [%]", "Stress @ Peak [MPa]", "Strain @ Peak [%]", "Toughness [MJ/m³]"]
+        st.table(res_df[numeric_cols].apply(pd.to_numeric, errors='coerce').agg(['mean', 'std']).T.style.format("{:.2f}"))
 
-        # --- 12. Individual Summary Result Table ---
+        # --- 12. Complete Records ---
         st.subheader("📋 Complete Individual Test Records")
-        st.dataframe(
-            res_df[["Sample", "Class", "Modulus (E) [MPa]", "Yield Stress [MPa]", "Yield Strain [%]", "Stress @ Peak [MPa]", "Strain @ Peak [%]", "Work Done [J]", "Toughness [MJ/m³]"]],
-            hide_index=True, 
-            use_container_width=True
-        )
+        st.dataframe(res_df, hide_index=True, use_container_width=True)
 
         # --- 13. Export Module ---
-        st.divider()
         output = io.BytesIO()
-        try:
-            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-                res_df.to_excel(writer, sheet_name='Samples', index=False)
-                stats_df.to_excel(writer, sheet_name='Stats')
-                if 'comp_df' in locals():
-                    comp_df.to_excel(writer, sheet_name='Comparison_Analysis', index=False)
-        except Exception as e:
-            st.error(f"Excel Export Error: {e}")
-
-        st.download_button(
-            label="📥 Download Full Excel Report", 
-            data=output.getvalue(), 
-            file_name=f"{project_name}_Full_Report.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            key="final_batch_download_excel_fixed"
-        )
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            res_df.to_excel(writer, sheet_name='Samples', index=False)
+        st.download_button(label="📥 Download Full Excel Report", data=output.getvalue(), file_name=f"{project_name}_Report.xlsx")
