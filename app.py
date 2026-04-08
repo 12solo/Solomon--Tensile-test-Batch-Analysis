@@ -14,7 +14,7 @@ from streamlit_drawable_canvas import st_canvas
 # --- 1. Page Configuration ---
 st.set_page_config(
     page_title="Tensile Master Pro2 | Solomon Scientific",
-    page_icon="🔬",
+    page_icon="LOGO.png",
     layout="wide",
     initial_sidebar_state="expanded"
 )
