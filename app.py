@@ -226,7 +226,7 @@ def render_header():
     <div style="
         display:flex; align-items:center; justify-content:space-between;
         padding: 1.5rem 2rem;
-        background: linear-gradient(135deg, #001f3f 0%, #000c1a 100%); /* Dark Blue Gradient */
+        background: #003366; /* Solid Dark Blue */
         border-radius: 4px;
         margin-bottom: 1.5rem;
         margin-top: 0.5rem;
@@ -254,7 +254,7 @@ def render_header():
         <div style="
             font-family:'IBM Plex Sans',sans-serif;
             font-size:0.65rem;
-            color:#64748b;
+            color:#cbd5e1;
             letter-spacing:0.12em;
             text-transform:uppercase;
             text-align:right;
@@ -322,7 +322,7 @@ with st.sidebar:
         custom_x_max = st.number_input("Manual X Max (Strain %)", value=10.0)
         custom_y_max = st.number_input("Manual Y Max (Stress MPa)", value=50.0)
 
-# --- 20 MAXIMUM CONTRAST COLORS (Gold & Navy First) ---
+# --- 20 MAXIMUM CONTRAST COLORS (Gold & Dark Blue First) ---
 distinct_20 = [
     "#c9a84c", "#003366", "#e05252", "#3a7bd5", "#3db87a", "#803E75", "#FF6800",
     "#817066", "#007D34", "#F6768E", "#00538A", "#FF7A5C", "#53377A", "#FF8E00",
