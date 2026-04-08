@@ -12,7 +12,7 @@ from streamlit_drawable_canvas import st_canvas
 
 # --- 1. Page Configuration ---
 st.set_page_config(
-    page_title="Tensile Extrapolation Suite | Solomon Scientific",
+    page_title="Solomon Tensile Suite 2",
     page_icon="🔬",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -205,7 +205,7 @@ h1, h2, h3 { color: var(--navy) !important; font-weight: 700 !important; }
 """, unsafe_allow_html=True)
 
 # ==========================================
-# HEADER & SIDEBAR RENDERING (From Batch App)
+# HEADER & SIDEBAR RENDERING
 # ==========================================
 def get_base64(path):
     if os.path.exists(path):
@@ -239,7 +239,7 @@ def render_header():
                     font-weight:700;
                     color:#f0f4fb;
                     line-height:1.1;
-                ">Tensile Extrapolation Suite <span style="color:#c9a84c;">2.1</span></div>
+                ">Solomon Tensile Suite <span style="color:#c9a84c;">2.1</span></div>
                 <div style="
                     font-family:'IBM Plex Sans',sans-serif;
                     font-size:0.72rem;
@@ -247,7 +247,7 @@ def render_header():
                     letter-spacing:0.2em;
                     text-transform:uppercase;
                     margin-top:4px;
-                ">Analytical Framework for Strain Behavior &nbsp;·&nbsp; Solomon Scientific</div>
+                ">Analytical Framework for Bio-Composite Strain Behavior &nbsp;·&nbsp; Solomon Scientific</div>
             </div>
         </div>
         <div style="
@@ -277,7 +277,7 @@ def render_sidebar_brand():
         {icon_html}
         <div style="font-family:'IBM Plex Sans',sans-serif;font-size:0.65rem;color:#9c7a32;letter-spacing:0.2em;text-transform:uppercase;margin-bottom:4px;font-weight:700;">Solomon Scientific</div>
         <div style="font-family:'Playfair Display',Georgia,serif;font-size:1.1rem;font-weight:700;color:#111827;line-height:1.2;">
-            Extrapolation Pro <span style="color:#c9a84c;">2.1</span>
+            Suite Pro <span style="color:#c9a84c;">2.1</span>
         </div>
         <div style="
             margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid #e2e8f0;
@@ -289,6 +289,7 @@ def render_sidebar_brand():
     </div>
     """, unsafe_allow_html=True)
 
+# Render main header
 render_header()
 
 # --- 3. Sidebar: Professional Inputs ---
@@ -309,7 +310,7 @@ with st.sidebar:
     scale_map = {"Millimeters (mm)": 1.0, "Micrometers (um)": 0.001, "Meters (m)": 1000.0}
     u_scale = scale_map[unit_input]
 
-    apply_zeroing = st.checkbox("Apply Toe-Compensation", value=True)
+    apply_zeroing = st.checkbox("Apply Toe-Compensation (Shift to 0,0)", value=True)
 
     st.markdown("### 🎨 Plot Customization")
     line_thickness = st.slider("Line Thickness (Journal Plot)", 0.5, 5.0, 2.0, 0.5)
@@ -320,7 +321,7 @@ with st.sidebar:
         custom_x_max = st.number_input("Manual X Max (Strain %)", value=10.0)
         custom_y_max = st.number_input("Manual Y Max (Stress MPa)", value=50.0)
 
-# --- 20 MAXIMUM CONTRAST COLORS (KELLY'S SET) ---
+# --- 20 MAXIMUM CONTRAST COLORS (Gold & Navy First) ---
 distinct_20 = [
     "#c9a84c", "#111827", "#e05252", "#3a7bd5", "#3db87a", "#803E75", "#FF6800",
     "#817066", "#007D34", "#F6768E", "#00538A", "#FF7A5C", "#53377A", "#FF8E00",
@@ -411,7 +412,7 @@ if uploaded_files:
     modulus_fit_storage = {} 
     sample_color_map = {}
 
-    st.sidebar.markdown("### 🎨 Manual Colors")
+    st.sidebar.markdown("### 🎨 Manual Sample Colors")
 
     st.subheader("🛠️ Sample Configuration & Modulus Validation")
     with st.expander("⚡ Bulk Update (Apply to All Samples)"):
@@ -556,10 +557,10 @@ if uploaded_files:
             fig_main = go.Figure()
             for name, data in plot_data_storage.items():
                 fig_main.add_trace(go.Scatter(x=data[0], y=data[1], name=name, mode='lines', 
-                                             line=dict(width=line_thickness, color=sample_color_map.get(name, '#000000'))))
+                                             line=dict(width=line_thickness, color=sample_color_map.get(name, '#111827'))))
             x_lim = res_df["Strain @ Peak [%]"].max() * 1.05 if auto_scale else custom_x_max
             y_lim = res_df["Stress @ Peak [MPa]"].max() * 1.1 if auto_scale else custom_y_max
-            fig_main.update_layout(plot_bgcolor='#ffffff', paper_bgcolor='#ffffff', font=dict(color='#111827'), xaxis=dict(title="Strain (%)", range=[0, x_lim], showgrid=False, linecolor='#000000', linewidth=2, ticks='inside'), yaxis=dict(title="Stress (MPa)", range=[0, y_lim], showgrid=False, linecolor='#000000', linewidth=2, ticks='inside'), height=650)
+            fig_main.update_layout(plot_bgcolor='#ffffff', paper_bgcolor='#ffffff', font=dict(color='#111827'), xaxis=dict(title="Strain (%)", range=[0, x_lim], showgrid=False, linecolor='#111827', linewidth=2, ticks='inside'), yaxis=dict(title="Stress (MPa)", range=[0, y_lim], showgrid=False, linecolor='#111827', linewidth=2, ticks='inside'), height=650)
             st.plotly_chart(fig_main, use_container_width=True)
         else:
             st.pyplot(fig_journal)
@@ -612,7 +613,7 @@ if uploaded_files:
             plot_sheet.write('A2', 'Note: This image is exported at 600 DPI for publication quality.')
             
             img_excel = io.BytesIO()
-            fig_journal.savefig(img_excel, format='png', dpi=300, bbox_inches='tight') # Reduced DPI for Excel to save space
+            fig_journal.savefig(img_excel, format='png', dpi=300, bbox_inches='tight') 
             img_excel.seek(0)
             plot_sheet.insert_image('A4', 'final_plot.png', {'image_data': img_excel, 'x_scale': 0.8, 'y_scale': 0.8})
 
