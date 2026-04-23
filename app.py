@@ -26,7 +26,7 @@ st.markdown("""
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
 
 :root {
-    --dark-blue:  #003366;
+    --dark-blue:  #003366; /* New Dark Blue for Headings */
     --navy:       #0b1120;
     --navy-mid:   #111827;
     --gold:       #c9a84c;
@@ -57,13 +57,16 @@ html, body, [class*="css"], .stMarkdown, .stText, .stButton, .stSelectbox, .stTa
     padding-bottom: 2rem !important;
 }
 
+/* ── SURGICAL CLEAN UI (Hides Popups & Arrows & Shadows) ── */
 #MainMenu { visibility: hidden !important; display: none !important; }
 .stDeployButton { display: none !important; }
 footer { visibility: hidden !important; display: none !important; }
 header { background: transparent !important; box-shadow: none !important; } 
 
+/* Hide "Press Enter to apply" */
 div[data-testid="InputInstructions"] { display: none !important; visibility: hidden !important; opacity: 0 !important; height: 0px !important; }
 
+/* Hide up/down arrows (steppers) on number inputs */
 input[type="number"]::-webkit-inner-spin-button, 
 input[type="number"]::-webkit-outer-spin-button {
     -webkit-appearance: none;
@@ -71,10 +74,12 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 input[type="number"] { -moz-appearance: textfield; }
 
+/* Clean Uploader: Hide Cloud Icon and 200MB text */
 [data-testid="stFileUploadDropzone"] svg { display: none !important; }
 [data-testid="stFileUploadDropzone"] small { display: none !important; }
 [data-testid="stFileUploadDropzone"] { padding: 1rem !important; }
 
+/* Hide Hover Tooltips */
 div[data-baseweb="tooltip"] { display: none !important; visibility: hidden !important; opacity: 0 !important; }
 [data-testid="stTooltipHoverTarget"] { pointer-events: none !important; cursor: default !important; }
 
@@ -125,6 +130,7 @@ div[data-baseweb="tooltip"] { display: none !important; visibility: hidden !impo
     border-color: var(--gold) !important;
 }
 
+/* ── Headings Main ────────────────────────────── */
 h1, h2, h3 { color: var(--dark-blue) !important; font-weight: 700 !important; }
 
 /* ── Buttons ──────────────────────────────────── */
@@ -156,7 +162,7 @@ h1, h2, h3 { color: var(--dark-blue) !important; font-weight: 700 !important; }
     border: 1px solid var(--border) !important;
 }
 
-/* ── Expanders & DataFrames ───────────────────── */
+/* ── Expanders ────────────────────────────────── */
 [data-testid="stExpander"] {
     border: 1px solid var(--border) !important;
     border-radius: var(--radius) !important;
@@ -169,6 +175,7 @@ h1, h2, h3 { color: var(--dark-blue) !important; font-weight: 700 !important; }
     font-size: 0.85rem !important;
 }
 
+/* ── DataFrames ───────────────────────────────── */
 [data-testid="stDataFrame"] {
     border: 1px solid var(--border) !important;
     border-radius: var(--radius) !important;
@@ -187,9 +194,20 @@ h1, h2, h3 { color: var(--dark-blue) !important; font-weight: 700 !important; }
     background: var(--bg-white) !important;
     font-family: var(--font-mono) !important;
 }
+
+/* ── Alerts / Info ────────────────────────────── */
+[data-testid="stAlert"] {
+    background: rgba(201, 168, 76, 0.1) !important;
+    border: 1px solid rgba(201, 168, 76, 0.3) !important;
+    border-radius: var(--radius) !important;
+    color: var(--text-dark) !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
+# ==========================================
+# HEADER & SIDEBAR RENDERING 
+# ==========================================
 def get_base64(path):
     if os.path.exists(path):
         with open(path, 'rb') as f:
@@ -205,15 +223,43 @@ def render_header():
         icon_html = '<div style="width: 54px; height: 54px; background: linear-gradient(135deg, #9c7a32, #c9a84c); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; flex-shrink: 0;">🔬</div>'
 
     st.markdown(f"""
-    <div style="display:flex; align-items:center; justify-content:space-between; padding: 1.5rem 2rem; background: #003366; border-radius: 4px; margin-bottom: 1.5rem; margin-top: 0.5rem;">
+    <div style="
+        display:flex; align-items:center; justify-content:space-between;
+        padding: 1.5rem 2rem;
+        background: #003366; /* Solid Dark Blue */
+        border-radius: 4px;
+        margin-bottom: 1.5rem;
+        margin-top: 0.5rem;
+    ">
         <div style="display:flex;align-items:center;gap:1.5rem;">
             {icon_html}
             <div>
-                <div style="font-family:'Playfair Display',Georgia,serif; font-size:1.75rem; font-weight:700; color:#f0f4fb; line-height:1.1;">Solomon Tensile Master Pro <span style="color:#c9a84c;">2</span></div>
-                <div style="font-family:'IBM Plex Sans',sans-serif; font-size:0.72rem; color:#a8b4c8; letter-spacing:0.2em; text-transform:uppercase; margin-top:4px;">Analytical Framework for Bio-Composite Strain Behavior &nbsp;·&nbsp; Solomon Scientific</div>
+                <div style="
+                    font-family:'Playfair Display',Georgia,serif;
+                    font-size:1.75rem;
+                    font-weight:700;
+                    color:#f0f4fb;
+                    line-height:1.1;
+                ">Solomon Tensile Master Pro <span style="color:#c9a84c;">2</span></div>
+                <div style="
+                    font-family:'IBM Plex Sans',sans-serif;
+                    font-size:0.72rem;
+                    color:#a8b4c8;
+                    letter-spacing:0.2em;
+                    text-transform:uppercase;
+                    margin-top:4px;
+                ">Analytical Framework for Bio-Composite Strain Behavior &nbsp;·&nbsp; Solomon Scientific</div>
             </div>
         </div>
-        <div style="font-family:'IBM Plex Sans',sans-serif; font-size:0.65rem; color:#cbd5e1; letter-spacing:0.12em; text-transform:uppercase; text-align:right; line-height:1.8;">
+        <div style="
+            font-family:'IBM Plex Sans',sans-serif;
+            font-size:0.65rem;
+            color:#cbd5e1;
+            letter-spacing:0.12em;
+            text-transform:uppercase;
+            text-align:right;
+            line-height:1.8;
+        ">
             © 2026<br>
         </div>
     </div>
@@ -234,7 +280,10 @@ def render_sidebar_brand():
         <div style="font-family:'Playfair Display',Georgia,serif;font-size:1.1rem;font-weight:700;color:#003366;line-height:1.2;">
             Suite Pro <span style="color:#c9a84c;">2.1</span>
         </div>
-        <div style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid #e2e8f0; font-family:'IBM Plex Sans',sans-serif;font-size:0.68rem;color:#64748b;line-height:1.5;">
+        <div style="
+            margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid #e2e8f0;
+            font-family:'IBM Plex Sans',sans-serif;font-size:0.68rem;color:#64748b;line-height:1.5;
+        ">
             Advanced Modeling Tools &nbsp;<br>
             <a href='mailto:your.solomon.duf@gmail.com' style='color:#9c7a32;text-decoration:none;font-weight:500;'>✉ Contact Developer</a>
         </div>
@@ -243,6 +292,7 @@ def render_sidebar_brand():
 
 render_header()
 
+# --- 3. Sidebar: Professional Inputs ---
 with st.sidebar:
     render_sidebar_brand()
     
@@ -351,6 +401,7 @@ if input_mode == "Image Digitizer":
 else:
     uploaded_files = st.file_uploader("Upload Samples", type=['csv', 'xlsx', 'txt'], accept_multiple_files=True, key="main_loader")
 
+# --- 8. Core Processing Engine ---
 if uploaded_files:
     all_results = []
     master_raw_data_list = []  
@@ -475,12 +526,14 @@ if uploaded_files:
                 })
 
                 # --- NEW: Format Raw Data for Side-by-Side concatenation ---
+                # Added .reset_index(drop=True) to prevent alignment errors when concatenating data of different lengths
                 raw_df = pd.DataFrame({
                     f"{custom_name}_Load [N]": stress_plot * area,
                     f"{custom_name}_Deformation [mm]": (strain_plot / 100) * gauge_length,
                     f"{custom_name}_Stress [MPa]": stress_plot,
                     f"{custom_name}_Strain [%]": strain_plot
-                })
+                }).reset_index(drop=True) 
+                
                 master_raw_data_list.append(raw_df)
 
             else:
@@ -548,40 +601,84 @@ if uploaded_files:
         stats_df = res_df[numeric_cols].apply(pd.to_numeric, errors='coerce').agg(['mean', 'std']).T
         st.table(stats_df.style.format("{:.2f}"))
 
-        # --- FIND REPRESENTATIVE SAMPLE ---
+        # --- FIND REPRESENTATIVE SAMPLE (Euclidean distance to mean) ---
         rep_sample_name = None
         if len(res_df) > 0:
-            # Coerce errors to isolate numeric values safely, avoiding string outputs like 'N/A'
             temp_num_df = res_df[numeric_cols].apply(pd.to_numeric, errors='coerce')
             means = temp_num_df.mean()
-            # Calculate normalized Euclidean distance from mean for all stats
-            safe_means = means.replace(0, 1) # prevent div/0
+            safe_means = means.replace(0, 1) # Prevent div/0 
             distances = ((temp_num_df - means) / safe_means).pow(2).sum(axis=1)
             best_idx = distances.idxmin()
             rep_sample_name = res_df.loc[best_idx, "Sample"]
-            st.success(f"📌 Based on statistical analysis, **{rep_sample_name}** represents the average behavior closest to the batch mean.")
+            st.success(f"🎯 **Representative Sample Auto-Detected:** `{rep_sample_name}` (Closest to batch average)")
 
         st.subheader("📋 Complete Individual Test Records")
         st.dataframe(res_df, hide_index=True, use_container_width=True)
 
         st.divider()
+        
+        # --- SCIENTIFIC METHODS SECTION (RESTORED IN FULL) ---
         st.subheader("📖 Computational Methodology")
         st.markdown("Automated data reduction and analytical pipeline.")
         
         with st.expander("I. Data Pre-Processing & Digitization", expanded=True):
-            st.markdown(r"**Raw Data Acquisition & Parsing:** Tensile data is imported via standard tabular formats (CSV/XLSX/TXT) or extracted from legacy graphical plots via affine coordinate transformation. ")
+            st.markdown(r"""
+            **Raw Data Acquisition & Parsing:** Tensile data is imported via standard tabular formats (CSV/XLSX/TXT) or extracted from legacy graphical plots via affine coordinate transformation. 
+            
+            **Image Digitization Protocol:** For graphical data, user-defined anchor points establish the mathematical bounds of the plot space. The application subsequently maps digitized pixel coordinates $(x_p, y_p)$ to the real engineering domain $(\varepsilon, \sigma)$ using linear scalar transformations.
+            """)
 
         with st.expander("II. Toe Compensation & Origin Calibration", expanded=False):
-            st.markdown(r"**Artifact Removal:** Initial non-linearities caused by machine compliance, grip slippage, or specimen seating are systematically eliminated.")
+            st.markdown(r"""
+            **Artifact Removal:** Initial non-linearities caused by machine compliance, grip slippage, or specimen seating are systematically eliminated.
+            
+            **Algorithmic Approach:** The algorithm evaluates the initial strain domain utilizing a sliding regression window to isolate the region of maximum contiguous linearity (Young's Modulus, $E$). This linear domain is extrapolated backward to intersect the zero-stress axis. The resulting strain-intercept denotes the **toe offset** ($\delta$):
+            
+            $$\delta = \frac{-b_{\max}}{m_{\max}}$$
+            
+            The entire stress-strain trace is uniformly translated by $-\delta$, rigorously forcing the true elastic region through the Cartesian origin $(0,0)$.
+            """)
 
         with st.expander("III. Elastic & Plastic Parameters", expanded=False):
-            st.markdown(r"**Young's Modulus ($E$):** Determined as the slope of the toe-compensated linear elastic region:")
+            st.markdown(r"""
+            **Young's Modulus ($E$):** Determined as the slope of the toe-compensated linear elastic region:
+            $$E = \frac{\Delta\sigma}{\Delta\varepsilon} \quad (\text{MPa})$$
+            
+            **Yield Strength ($\sigma_y$):** Evaluated strictly via the standard $0.2\%$ strain offset criterion (e.g., per ASTM D638 / ISO 527). A theoretical line of slope $E$ is translated $0.002$ mm/mm along the abscissa. The intercept with the empirical curve defines the yield coordinate.
+            $$\sigma_{\text{offset}} = E \cdot (\varepsilon - 0.002)$$
+            """)
 
         with st.expander("IV. Ultimate Limits & Failure Truncation", expanded=False):
-            st.markdown(r"**Ultimate Tensile Strength (UTS):** Evaluated as the global maximum engineering stress achieved prior to the onset of localized necking or failure.")
+            st.markdown(r"""
+            **Ultimate Tensile Strength (UTS):** Evaluated as the global maximum engineering stress achieved prior to the onset of localized necking or failure.
+            $$\text{UTS} = \max(\sigma) = \frac{F_{\max}}{A_0}$$
+            
+            **Fracture Definition & Noise Truncation:** To prevent post-failure machine rebound or sensor noise from corrupting data integrity, structural failure is strictly defined at the ultimate stress index. The dataset is programmatically truncated immediately at this peak ($i = i_{\text{UTS}}$), discarding all subsequent trailing data.
+            """)
 
         with st.expander("V. Energy Integrals (Work & Toughness)", expanded=False):
-            st.markdown(r"**Absolute Work of Rupture ($W$):** The total thermodynamic energy required to fracture the specimen, calculated via trapezoidal numerical integration of the raw Force-Displacement curve.")
+            st.markdown(r"""
+            **Absolute Work of Rupture ($W$):** The total thermodynamic energy required to fracture the specimen, calculated via trapezoidal numerical integration of the raw Force-Displacement curve.
+            $$W = \int_0^{L_f} F \, dL \quad (\text{Joules})$$
+            
+            **Modulus of Toughness ($U_T$):** The volumetric energy absorption capacity, representing the integrated area beneath the normalized engineering Stress-Strain envelope.
+            $$U_T = \int_0^{\varepsilon_f} \sigma \, d\varepsilon \quad (\text{MJ/m}^3)$$
+            """)
+
+        st.markdown("**Auto-Generated Methodology Text** (Standardized excerpt for academic manuscripts):")
+        methods_text = (
+            "Mechanical property extraction was conducted using the Solomon Tensile Suite v2.1. "
+            "Raw load-displacement data were standardized and evaluated for machine compliance. "
+            "A dynamic sliding-window regression was utilized over the initial deformation phase "
+            "to identify the maximum linear elastic gradient (Young's modulus), which was subsequently extrapolated "
+            "to perform toe-compensation and align the data origin. Yield strength was isolated employing the "
+            "standard 0.2% strain offset technique. Ultimate tensile strength (UTS) was defined at the global stress maximum, "
+            "with all post-peak fracture and noise artifacts programmatically truncated to ensure data integrity. "
+            "Energy absorption metrics, including volumetric toughness (MJ/m³) and absolute work of rupture (J), "
+            "were calculated via trapezoidal numerical integration of the engineering stress-strain and "
+            "force-displacement envelopes, respectively."
+        )
+        st.text_area("", methods_text, height=180)
 
         excel_out = io.BytesIO()
         with pd.ExcelWriter(excel_out, engine='xlsxwriter') as writer:
@@ -602,11 +699,12 @@ if uploaded_files:
                 
                 # Extract Representative sample into separate sheet
                 if rep_sample_name:
-                    rep_cols = [c for c in master_raw_df.columns if c.startswith(f"{rep_sample_name}_")]
-                    rep_raw_df = master_raw_df[rep_cols].dropna(how='all')
-                    # Rename columns to look clean (strip sample name prefix)
-                    rep_raw_df.columns = [c.replace(f"{rep_sample_name}_", "") for c in rep_raw_df.columns]
-                    rep_raw_df.to_excel(writer, sheet_name='Representative_Data', index=False)
+                    rep_cols = [c for c in master_raw_df.columns if str(c).startswith(f"{rep_sample_name}_")]
+                    if rep_cols:
+                        rep_raw_df = master_raw_df[rep_cols].dropna(how='all')
+                        # Rename columns to look clean (strip sample name prefix)
+                        rep_raw_df.columns = [str(c).replace(f"{rep_sample_name}_", "") for c in rep_cols]
+                        rep_raw_df.to_excel(writer, sheet_name='Representative_Data', index=False)
 
             # Loop to autofit all dynamic generated sheets
             sheet_refs = [
