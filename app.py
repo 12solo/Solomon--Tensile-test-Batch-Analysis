@@ -409,6 +409,7 @@ else:
 # --- 8. Core Processing Engine ---
 if uploaded_files:
     all_results = []
+    master_raw_data_list = []  # To store the generated raw export data 
     plot_data_storage = {} 
     modulus_fit_storage = {} 
     sample_color_map = {}
@@ -517,13 +518,30 @@ if uploaded_files:
                 try: work_j = np.trapezoid(stress_plot * area, (strain_plot/100 * gauge_length) / 1000.0)
                 except: work_j = np.trapz(stress_plot * area, (strain_plot/100 * gauge_length) / 1000.0)
                 
+                # --- UPDATED SUMMARY DICTIONARY TO MATCH IMAGE STRUCTURE EXACTLY ---
                 all_results.append({
-                    "Sample": custom_name, "Class": mat_class,
-                    "Modulus (E) [MPa]": round(E_slope * 100, 1),
-                    "Yield Stress [MPa]": y_stress, "Yield Strain [%]": y_strain,
-                    "Stress @ Peak [MPa]": round(stress_plot[-1], 2), "Strain @ Peak [%]": round(strain_plot[-1], 2),
-                    "Work Done [J]": round(work_j, 4), "Toughness [MJ/m³]": round((work_j / (area * gauge_length * 1e-9)) / 1e6, 3)
+                    "Sample": custom_name,
+                    "File": file.name,
+                    "Modulus [MPa]": round(E_slope * 100, 1),
+                    "Yield Stress [MPa]": y_stress, 
+                    "Yield Strain [%]": y_strain,
+                    "UTS [MPa]": round(np.max(stress_plot), 2),
+                    "Stress at Break [MPa]": round(stress_plot[-1], 2),
+                    "Elongation at Break [%]": round(strain_plot[-1], 2),
+                    "Work Done [J]": round(work_j, 4), 
+                    "Toughness [MJ/m³]": round((work_j / (area * gauge_length * 1e-9)) / 1e6, 3)
                 })
+
+                # --- COMPILE RAW DATA EXTRACTS FOR THE EXPORT SHEET ---
+                raw_df = pd.DataFrame({
+                    "Sample": custom_name,
+                    "Load [N]": stress_plot * area,
+                    "Deformation [mm]": (strain_plot / 100) * gauge_length,
+                    "Stress [MPa]": stress_plot,
+                    "Strain [%]": strain_plot
+                })
+                master_raw_data_list.append(raw_df)
+
             else:
                 c1.error("Insufficient points.")
 
@@ -547,8 +565,9 @@ if uploaded_files:
         if not auto_scale:
             ax_journal.set_xlim(0, custom_x_max); ax_journal.set_ylim(0, custom_y_max)
         else:
-            ax_journal.set_xlim(0, res_df["Strain @ Peak [%]"].max() * 1.05)
-            ax_journal.set_ylim(0, res_df["Stress @ Peak [MPa]"].max() * 1.1)
+            # Updated to reflect new column names correctly in plotting 
+            ax_journal.set_xlim(0, res_df["Elongation at Break [%]"].max() * 1.05)
+            ax_journal.set_ylim(0, res_df["UTS [MPa]"].max() * 1.1)
         
         ax_journal.set_xlabel('Strain (%)', fontweight='bold', labelpad=10)
         ax_journal.set_ylabel('Stress (MPa)', fontweight='bold', labelpad=10)
@@ -560,8 +579,8 @@ if uploaded_files:
             for name, data in plot_data_storage.items():
                 fig_main.add_trace(go.Scatter(x=data[0], y=data[1], name=name, mode='lines', 
                                              line=dict(width=line_thickness, color=sample_color_map.get(name, '#003366'))))
-            x_lim = res_df["Strain @ Peak [%]"].max() * 1.05 if auto_scale else custom_x_max
-            y_lim = res_df["Stress @ Peak [MPa]"].max() * 1.1 if auto_scale else custom_y_max
+            x_lim = res_df["Elongation at Break [%]"].max() * 1.05 if auto_scale else custom_x_max
+            y_lim = res_df["UTS [MPa]"].max() * 1.1 if auto_scale else custom_y_max
             fig_main.update_layout(plot_bgcolor='#ffffff', paper_bgcolor='#ffffff', font=dict(color='#111827'), xaxis=dict(title="Strain (%)", range=[0, x_lim], showgrid=False, linecolor='#111827', linewidth=2, ticks='inside'), yaxis=dict(title="Stress (MPa)", range=[0, y_lim], showgrid=False, linecolor='#111827', linewidth=2, ticks='inside'), height=650)
             st.plotly_chart(fig_main, use_container_width=True)
         else:
@@ -583,12 +602,14 @@ if uploaded_files:
         comp_df = res_df.copy()
         if control_sample:
             baseline = res_df[res_df["Sample"] == control_sample].iloc[0]
-            for col, base in [("Modulus (E) [MPa]", "Modulus (E) [MPa]"), ("Stress @ Peak [MPa]", "Stress @ Peak [MPa]"), ("Toughness [MJ/m³]", "Toughness [MJ/m³]")]:
+            # Updated to reflect new header keys
+            for col, base in [("Modulus [MPa]", "Modulus [MPa]"), ("UTS [MPa]", "UTS [MPa]"), ("Toughness [MJ/m³]", "Toughness [MJ/m³]")]:
                 comp_df[f"{col.split()[0]} Δ (%)"] = ((pd.to_numeric(comp_df[col], errors='coerce') - float(baseline[base])) / float(baseline[base])) * 100
             st.dataframe(comp_df.style.format("{:+.1f}%", subset=[c for c in comp_df.columns if "Δ" in c]).background_gradient(cmap="Blues", subset=[c for c in comp_df.columns if "Δ" in c]), hide_index=True)
 
         st.subheader(f"📊 Batch Summary Statistics (n={len(res_df)})")
-        numeric_cols = ["Modulus (E) [MPa]", "Yield Stress [MPa]", "Yield Strain [%]", "Stress @ Peak [MPa]", "Strain @ Peak [%]", "Toughness [MJ/m³]"]
+        # Updated to perfectly reflect the new image columns
+        numeric_cols = ["Modulus [MPa]", "Yield Stress [MPa]", "Yield Strain [%]", "UTS [MPa]", "Stress at Break [MPa]", "Elongation at Break [%]", "Work Done [J]", "Toughness [MJ/m³]"]
         stats_df = res_df[numeric_cols].apply(pd.to_numeric, errors='coerce').agg(['mean', 'std']).T
         st.table(stats_df.style.format("{:.2f}"))
 
@@ -673,8 +694,25 @@ if uploaded_files:
             # 3. Comparison Delta Analysis
             if 'comp_df' in locals():
                 comp_df.to_excel(writer, sheet_name='Comparative_Analysis', index=False)
+
+            # 4. Compile the full raw data mapping
+            if master_raw_data_list:
+                master_raw_df = pd.concat(master_raw_data_list, ignore_index=True)
+                master_raw_df.to_excel(writer, sheet_name='Raw_Data', index=False)
+
+            # --- Apply auto-fitting logic loop for ALL Excel output sheets ---
+            for sheetname, df_ref in [('Individual_Results', res_df), 
+                                      ('Batch_Statistics', stats_df.reset_index()), 
+                                      ('Comparative_Analysis', comp_df if 'comp_df' in locals() else None),
+                                      ('Raw_Data', master_raw_df if master_raw_data_list else None)]:
+                if df_ref is not None and sheetname in writer.sheets:
+                    worksheet = writer.sheets[sheetname]
+                    for i, col in enumerate(df_ref.columns):
+                        # Ensure cell contents are calculated securely and width padded slightly
+                        column_len = max(df_ref[col].astype(str).map(len).max(), len(str(col))) + 2
+                        worksheet.set_column(i, i, column_len)
             
-            # 4. Final Plot Embedding
+            # 5. Final Plot Embedding
             plot_sheet = writer.book.add_worksheet('Final_Visual_Report')
             plot_sheet.write('A1', f'Project: {project_name}')
             plot_sheet.write('A2', 'Note: This image is exported at 600 DPI for publication quality.')
