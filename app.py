@@ -26,7 +26,7 @@ st.markdown("""
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
 
 :root {
-    --dark-blue:  #003366; /* New Dark Blue for Headings */
+    --dark-blue:  #003366;
     --navy:       #0b1120;
     --navy-mid:   #111827;
     --gold:       #c9a84c;
@@ -226,7 +226,7 @@ def render_header():
     <div style="
         display:flex; align-items:center; justify-content:space-between;
         padding: 1.5rem 2rem;
-        background: #003366; /* Solid Dark Blue */
+        background: #003366;
         border-radius: 4px;
         margin-bottom: 1.5rem;
         margin-top: 0.5rem;
@@ -525,8 +525,8 @@ if uploaded_files:
                     "Toughness [MJ/m³]": round((work_j / (area * gauge_length * 1e-9)) / 1e6, 3)
                 })
 
-                # --- NEW: Format Raw Data for Side-by-Side concatenation ---
-                # Added .reset_index(drop=True) to prevent alignment errors when concatenating data of different lengths
+                # --- 1. HORIZONTAL CONCATENATION PREPARATION ---
+                # CRITICAL: .reset_index(drop=True) prevents alignment errors during pd.concat(axis=1)
                 raw_df = pd.DataFrame({
                     f"{custom_name}_Load [N]": stress_plot * area,
                     f"{custom_name}_Deformation [mm]": (strain_plot / 100) * gauge_length,
@@ -601,9 +601,10 @@ if uploaded_files:
         stats_df = res_df[numeric_cols].apply(pd.to_numeric, errors='coerce').agg(['mean', 'std']).T
         st.table(stats_df.style.format("{:.2f}"))
 
-        # --- FIND REPRESENTATIVE SAMPLE (Euclidean distance to mean) ---
+        # --- 2. REPRESENTATIVE SAMPLE ALGORITHM ---
         rep_sample_name = None
         if len(res_df) > 0:
+            # Calculate Euclidean distance from batch mean for numerical features
             temp_num_df = res_df[numeric_cols].apply(pd.to_numeric, errors='coerce')
             means = temp_num_df.mean()
             safe_means = means.replace(0, 1) # Prevent div/0 
@@ -616,8 +617,6 @@ if uploaded_files:
         st.dataframe(res_df, hide_index=True, use_container_width=True)
 
         st.divider()
-        
-        # --- SCIENTIFIC METHODS SECTION (RESTORED IN FULL) ---
         st.subheader("📖 Computational Methodology")
         st.markdown("Automated data reduction and analytical pipeline.")
         
@@ -688,12 +687,12 @@ if uploaded_files:
             if 'comp_df' in locals():
                 comp_df.to_excel(writer, sheet_name='Comparative_Analysis', index=False)
 
-            # --- PROCESS RAW AND REPRESENTATIVE DATA HORIZONTALLY ---
+            # --- 3. HORIZONTAL CONCATENATION & REPRESENTATIVE EXTRACTION ---
             master_raw_df = None
             rep_raw_df = None
             
             if master_raw_data_list:
-                # Concat horizontal side-by-side using axis=1
+                # Concatenate horizontally side-by-side using axis=1
                 master_raw_df = pd.concat(master_raw_data_list, axis=1)
                 master_raw_df.to_excel(writer, sheet_name='Raw_Data_All', index=False)
                 
@@ -706,7 +705,7 @@ if uploaded_files:
                         rep_raw_df.columns = [str(c).replace(f"{rep_sample_name}_", "") for c in rep_cols]
                         rep_raw_df.to_excel(writer, sheet_name='Representative_Data', index=False)
 
-            # Loop to autofit all dynamic generated sheets
+            # --- 4. COLUMN AUTOFITTING LOGIC ---
             sheet_refs = [
                 ('Individual_Results', res_df), 
                 ('Batch_Statistics', stats_df.reset_index()), 
@@ -719,6 +718,7 @@ if uploaded_files:
                 if df_ref is not None and sheetname in writer.sheets:
                     worksheet = writer.sheets[sheetname]
                     for i, col in enumerate(df_ref.columns):
+                        # Find the max length of the column header vs the string contents of the data
                         column_len = max(df_ref[col].astype(str).map(len).max(), len(str(col))) + 2
                         worksheet.set_column(i, i, column_len)
             
