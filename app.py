@@ -26,7 +26,7 @@ st.markdown("""
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
 
 :root {
-    --dark-blue:  #003366; /* New Dark Blue for Headings */
+    --dark-blue:  #003366;
     --navy:       #0b1120;
     --navy-mid:   #111827;
     --gold:       #c9a84c;
@@ -57,16 +57,13 @@ html, body, [class*="css"], .stMarkdown, .stText, .stButton, .stSelectbox, .stTa
     padding-bottom: 2rem !important;
 }
 
-/* ── SURGICAL CLEAN UI (Hides Popups & Arrows & Shadows) ── */
 #MainMenu { visibility: hidden !important; display: none !important; }
 .stDeployButton { display: none !important; }
 footer { visibility: hidden !important; display: none !important; }
 header { background: transparent !important; box-shadow: none !important; } 
 
-/* Hide "Press Enter to apply" */
 div[data-testid="InputInstructions"] { display: none !important; visibility: hidden !important; opacity: 0 !important; height: 0px !important; }
 
-/* Hide up/down arrows (steppers) on number inputs */
 input[type="number"]::-webkit-inner-spin-button, 
 input[type="number"]::-webkit-outer-spin-button {
     -webkit-appearance: none;
@@ -74,12 +71,10 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 input[type="number"] { -moz-appearance: textfield; }
 
-/* Clean Uploader: Hide Cloud Icon and 200MB text */
 [data-testid="stFileUploadDropzone"] svg { display: none !important; }
 [data-testid="stFileUploadDropzone"] small { display: none !important; }
 [data-testid="stFileUploadDropzone"] { padding: 1rem !important; }
 
-/* Hide Hover Tooltips */
 div[data-baseweb="tooltip"] { display: none !important; visibility: hidden !important; opacity: 0 !important; }
 [data-testid="stTooltipHoverTarget"] { pointer-events: none !important; cursor: default !important; }
 
@@ -130,7 +125,6 @@ div[data-baseweb="tooltip"] { display: none !important; visibility: hidden !impo
     border-color: var(--gold) !important;
 }
 
-/* ── Headings Main ────────────────────────────── */
 h1, h2, h3 { color: var(--dark-blue) !important; font-weight: 700 !important; }
 
 /* ── Buttons ──────────────────────────────────── */
@@ -162,7 +156,7 @@ h1, h2, h3 { color: var(--dark-blue) !important; font-weight: 700 !important; }
     border: 1px solid var(--border) !important;
 }
 
-/* ── Expanders ────────────────────────────────── */
+/* ── Expanders & DataFrames ───────────────────── */
 [data-testid="stExpander"] {
     border: 1px solid var(--border) !important;
     border-radius: var(--radius) !important;
@@ -175,7 +169,6 @@ h1, h2, h3 { color: var(--dark-blue) !important; font-weight: 700 !important; }
     font-size: 0.85rem !important;
 }
 
-/* ── DataFrames ───────────────────────────────── */
 [data-testid="stDataFrame"] {
     border: 1px solid var(--border) !important;
     border-radius: var(--radius) !important;
@@ -194,20 +187,9 @@ h1, h2, h3 { color: var(--dark-blue) !important; font-weight: 700 !important; }
     background: var(--bg-white) !important;
     font-family: var(--font-mono) !important;
 }
-
-/* ── Alerts / Info ────────────────────────────── */
-[data-testid="stAlert"] {
-    background: rgba(201, 168, 76, 0.1) !important;
-    border: 1px solid rgba(201, 168, 76, 0.3) !important;
-    border-radius: var(--radius) !important;
-    color: var(--text-dark) !important;
-}
 </style>
 """, unsafe_allow_html=True)
 
-# ==========================================
-# HEADER & SIDEBAR RENDERING 
-# ==========================================
 def get_base64(path):
     if os.path.exists(path):
         with open(path, 'rb') as f:
@@ -223,43 +205,15 @@ def render_header():
         icon_html = '<div style="width: 54px; height: 54px; background: linear-gradient(135deg, #9c7a32, #c9a84c); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; flex-shrink: 0;">🔬</div>'
 
     st.markdown(f"""
-    <div style="
-        display:flex; align-items:center; justify-content:space-between;
-        padding: 1.5rem 2rem;
-        background: #003366; /* Solid Dark Blue */
-        border-radius: 4px;
-        margin-bottom: 1.5rem;
-        margin-top: 0.5rem;
-    ">
+    <div style="display:flex; align-items:center; justify-content:space-between; padding: 1.5rem 2rem; background: #003366; border-radius: 4px; margin-bottom: 1.5rem; margin-top: 0.5rem;">
         <div style="display:flex;align-items:center;gap:1.5rem;">
             {icon_html}
             <div>
-                <div style="
-                    font-family:'Playfair Display',Georgia,serif;
-                    font-size:1.75rem;
-                    font-weight:700;
-                    color:#f0f4fb;
-                    line-height:1.1;
-                ">Solomon Tensile Master Pro <span style="color:#c9a84c;">2</span></div>
-                <div style="
-                    font-family:'IBM Plex Sans',sans-serif;
-                    font-size:0.72rem;
-                    color:#a8b4c8;
-                    letter-spacing:0.2em;
-                    text-transform:uppercase;
-                    margin-top:4px;
-                ">Analytical Framework for Bio-Composite Strain Behavior &nbsp;·&nbsp; Solomon Scientific</div>
+                <div style="font-family:'Playfair Display',Georgia,serif; font-size:1.75rem; font-weight:700; color:#f0f4fb; line-height:1.1;">Solomon Tensile Master Pro <span style="color:#c9a84c;">2</span></div>
+                <div style="font-family:'IBM Plex Sans',sans-serif; font-size:0.72rem; color:#a8b4c8; letter-spacing:0.2em; text-transform:uppercase; margin-top:4px;">Analytical Framework for Bio-Composite Strain Behavior &nbsp;·&nbsp; Solomon Scientific</div>
             </div>
         </div>
-        <div style="
-            font-family:'IBM Plex Sans',sans-serif;
-            font-size:0.65rem;
-            color:#cbd5e1;
-            letter-spacing:0.12em;
-            text-transform:uppercase;
-            text-align:right;
-            line-height:1.8;
-        ">
+        <div style="font-family:'IBM Plex Sans',sans-serif; font-size:0.65rem; color:#cbd5e1; letter-spacing:0.12em; text-transform:uppercase; text-align:right; line-height:1.8;">
             © 2026<br>
         </div>
     </div>
@@ -280,20 +234,15 @@ def render_sidebar_brand():
         <div style="font-family:'Playfair Display',Georgia,serif;font-size:1.1rem;font-weight:700;color:#003366;line-height:1.2;">
             Suite Pro <span style="color:#c9a84c;">2.1</span>
         </div>
-        <div style="
-            margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid #e2e8f0;
-            font-family:'IBM Plex Sans',sans-serif;font-size:0.68rem;color:#64748b;line-height:1.5;
-        ">
+        <div style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid #e2e8f0; font-family:'IBM Plex Sans',sans-serif;font-size:0.68rem;color:#64748b;line-height:1.5;">
             Advanced Modeling Tools &nbsp;<br>
             <a href='mailto:your.solomon.duf@gmail.com' style='color:#9c7a32;text-decoration:none;font-weight:500;'>✉ Contact Developer</a>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-# Render main header
 render_header()
 
-# --- 3. Sidebar: Professional Inputs ---
 with st.sidebar:
     render_sidebar_brand()
     
@@ -322,7 +271,6 @@ with st.sidebar:
         custom_x_max = st.number_input("Manual X Max (Strain %)", value=10.0)
         custom_y_max = st.number_input("Manual Y Max (Stress MPa)", value=50.0)
 
-# --- 20 MAXIMUM CONTRAST COLORS (Gold & Dark Blue First) ---
 distinct_20 = [
     "#c9a84c", "#003366", "#e05252", "#3a7bd5", "#3db87a", "#803E75", "#FF6800",
     "#817066", "#007D34", "#F6768E", "#00538A", "#FF7A5C", "#53377A", "#FF8E00",
@@ -338,7 +286,6 @@ class DigitizedFile:
         self.df = df
     def getvalue(self): return None 
 
-# --- 5. Image Digitizer Module ---
 def image_digitizer_ui():
     st.subheader("🖼️ Plot Digitizer Mode")
     digitizer_file = st.file_uploader("Upload Plot Image", type=["png", "jpg", "jpeg"], key="digitizer_upload")
@@ -376,7 +323,6 @@ def image_digitizer_ui():
                 return DigitizedFile(f"Digitized_{digitizer_file.name}", pd.DataFrame(data))
     return None
 
-# --- 6. Unified Robust Data Loader ---
 def smart_load(file):
     if hasattr(file, 'df'): return file.df 
     try:
@@ -398,7 +344,6 @@ def smart_load(file):
         st.error(f"Error loading {file.name}: {e}")
         return None
 
-# --- 7. Main Engine Input Selector ---
 input_mode = st.radio("Select Input Source", ["Standard Files (CSV/XLSX)", "Image Digitizer"], horizontal=True)
 if input_mode == "Image Digitizer":
     d_file = image_digitizer_ui()
@@ -406,10 +351,9 @@ if input_mode == "Image Digitizer":
 else:
     uploaded_files = st.file_uploader("Upload Samples", type=['csv', 'xlsx', 'txt'], accept_multiple_files=True, key="main_loader")
 
-# --- 8. Core Processing Engine ---
 if uploaded_files:
     all_results = []
-    master_raw_data_list = []  # To store the generated raw export data 
+    master_raw_data_list = []  
     plot_data_storage = {} 
     modulus_fit_storage = {} 
     sample_color_map = {}
@@ -455,7 +399,6 @@ if uploaded_files:
             stress_all = df_clean[f_col].values if (inst_stress_col and f_col == inst_stress_col) else (df_clean[f_col].values / area)
             strain_all = (disp_all / gauge_length) * 100
 
-        # TRUNCATE POST-FRACTURE NOISE
         peak_idx = np.argmax(stress_all)
         stress_raw = stress_all[:peak_idx + 1]
         strain_raw = strain_all[:peak_idx + 1]
@@ -518,7 +461,6 @@ if uploaded_files:
                 try: work_j = np.trapezoid(stress_plot * area, (strain_plot/100 * gauge_length) / 1000.0)
                 except: work_j = np.trapz(stress_plot * area, (strain_plot/100 * gauge_length) / 1000.0)
                 
-                # --- UPDATED SUMMARY DICTIONARY TO MATCH IMAGE STRUCTURE EXACTLY ---
                 all_results.append({
                     "Sample": custom_name,
                     "File": file.name,
@@ -532,26 +474,23 @@ if uploaded_files:
                     "Toughness [MJ/m³]": round((work_j / (area * gauge_length * 1e-9)) / 1e6, 3)
                 })
 
-                # --- COMPILE RAW DATA EXTRACTS FOR THE EXPORT SHEET ---
+                # --- NEW: Format Raw Data for Side-by-Side concatenation ---
                 raw_df = pd.DataFrame({
-                    "Sample": custom_name,
-                    "Load [N]": stress_plot * area,
-                    "Deformation [mm]": (strain_plot / 100) * gauge_length,
-                    "Stress [MPa]": stress_plot,
-                    "Strain [%]": strain_plot
+                    f"{custom_name}_Load [N]": stress_plot * area,
+                    f"{custom_name}_Deformation [mm]": (strain_plot / 100) * gauge_length,
+                    f"{custom_name}_Stress [MPa]": stress_plot,
+                    f"{custom_name}_Strain [%]": strain_plot
                 })
                 master_raw_data_list.append(raw_df)
 
             else:
                 c1.error("Insufficient points.")
 
-    # --- 9. Final Reports & Visualizations ---
     if all_results:
         res_df = pd.DataFrame(all_results)
         st.divider()
         view_mode = st.radio("Select Visualization Mode", ["Interactive (Cursor Inspection)", "Static (High-Res Journal TIFF)"], horizontal=True)
 
-        # Construct common Matplotlib plot for High-Res
         plt.rcParams.update({
             "font.family": "serif", "font.serif": ["Times New Roman"], "font.size": 12,
             "axes.linewidth": 1.5, "xtick.direction": "in", "ytick.direction": "in",
@@ -565,7 +504,6 @@ if uploaded_files:
         if not auto_scale:
             ax_journal.set_xlim(0, custom_x_max); ax_journal.set_ylim(0, custom_y_max)
         else:
-            # Updated to reflect new column names correctly in plotting 
             ax_journal.set_xlim(0, res_df["Elongation at Break [%]"].max() * 1.05)
             ax_journal.set_ylim(0, res_df["UTS [MPa]"].max() * 1.1)
         
@@ -586,7 +524,6 @@ if uploaded_files:
         else:
             st.pyplot(fig_journal)
             
-            # --- TIFF Export ---
             img_buf = io.BytesIO()
             fig_journal.savefig(img_buf, format='png', dpi=600, bbox_inches='tight')
             img_buf.seek(0)
@@ -602,123 +539,97 @@ if uploaded_files:
         comp_df = res_df.copy()
         if control_sample:
             baseline = res_df[res_df["Sample"] == control_sample].iloc[0]
-            # Updated to reflect new header keys
             for col, base in [("Modulus [MPa]", "Modulus [MPa]"), ("UTS [MPa]", "UTS [MPa]"), ("Toughness [MJ/m³]", "Toughness [MJ/m³]")]:
                 comp_df[f"{col.split()[0]} Δ (%)"] = ((pd.to_numeric(comp_df[col], errors='coerce') - float(baseline[base])) / float(baseline[base])) * 100
             st.dataframe(comp_df.style.format("{:+.1f}%", subset=[c for c in comp_df.columns if "Δ" in c]).background_gradient(cmap="Blues", subset=[c for c in comp_df.columns if "Δ" in c]), hide_index=True)
 
         st.subheader(f"📊 Batch Summary Statistics (n={len(res_df)})")
-        # Updated to perfectly reflect the new image columns
         numeric_cols = ["Modulus [MPa]", "Yield Stress [MPa]", "Yield Strain [%]", "UTS [MPa]", "Stress at Break [MPa]", "Elongation at Break [%]", "Work Done [J]", "Toughness [MJ/m³]"]
         stats_df = res_df[numeric_cols].apply(pd.to_numeric, errors='coerce').agg(['mean', 'std']).T
         st.table(stats_df.style.format("{:.2f}"))
 
+        # --- FIND REPRESENTATIVE SAMPLE ---
+        rep_sample_name = None
+        if len(res_df) > 0:
+            # Coerce errors to isolate numeric values safely, avoiding string outputs like 'N/A'
+            temp_num_df = res_df[numeric_cols].apply(pd.to_numeric, errors='coerce')
+            means = temp_num_df.mean()
+            # Calculate normalized Euclidean distance from mean for all stats
+            safe_means = means.replace(0, 1) # prevent div/0
+            distances = ((temp_num_df - means) / safe_means).pow(2).sum(axis=1)
+            best_idx = distances.idxmin()
+            rep_sample_name = res_df.loc[best_idx, "Sample"]
+            st.success(f"📌 Based on statistical analysis, **{rep_sample_name}** represents the average behavior closest to the batch mean.")
+
         st.subheader("📋 Complete Individual Test Records")
         st.dataframe(res_df, hide_index=True, use_container_width=True)
 
-        # --- 13. COMPREHENSIVE EXPORT MODULE ---
         st.divider()
-        
-        # --- SCIENTIFIC METHODS SECTION ---
         st.subheader("📖 Computational Methodology")
         st.markdown("Automated data reduction and analytical pipeline.")
         
         with st.expander("I. Data Pre-Processing & Digitization", expanded=True):
-            st.markdown(r"""
-            **Raw Data Acquisition & Parsing:** Tensile data is imported via standard tabular formats (CSV/XLSX/TXT) or extracted from legacy graphical plots via affine coordinate transformation. 
-            
-            **Image Digitization Protocol:** For graphical data, user-defined anchor points establish the mathematical bounds of the plot space. The application subsequently maps digitized pixel coordinates $(x_p, y_p)$ to the real engineering domain $(\varepsilon, \sigma)$ using linear scalar transformations.
-            """)
+            st.markdown(r"**Raw Data Acquisition & Parsing:** Tensile data is imported via standard tabular formats (CSV/XLSX/TXT) or extracted from legacy graphical plots via affine coordinate transformation. ")
 
         with st.expander("II. Toe Compensation & Origin Calibration", expanded=False):
-            st.markdown(r"""
-            **Artifact Removal:** Initial non-linearities caused by machine compliance, grip slippage, or specimen seating are systematically eliminated.
-            
-            **Algorithmic Approach:** The algorithm evaluates the initial strain domain utilizing a sliding regression window to isolate the region of maximum contiguous linearity (Young's Modulus, $E$). This linear domain is extrapolated backward to intersect the zero-stress axis. The resulting strain-intercept denotes the **toe offset** ($\delta$):
-            
-            $$\delta = \frac{-b_{\max}}{m_{\max}}$$
-            
-            The entire stress-strain trace is uniformly translated by $-\delta$, rigorously forcing the true elastic region through the Cartesian origin $(0,0)$.
-            """)
+            st.markdown(r"**Artifact Removal:** Initial non-linearities caused by machine compliance, grip slippage, or specimen seating are systematically eliminated.")
 
         with st.expander("III. Elastic & Plastic Parameters", expanded=False):
-            st.markdown(r"""
-            **Young's Modulus ($E$):** Determined as the slope of the toe-compensated linear elastic region:
-            $$E = \frac{\Delta\sigma}{\Delta\varepsilon} \quad (\text{MPa})$$
-            
-            **Yield Strength ($\sigma_y$):** Evaluated strictly via the standard $0.2\%$ strain offset criterion (e.g., per ASTM D638 / ISO 527). A theoretical line of slope $E$ is translated $0.002$ mm/mm along the abscissa. The intercept with the empirical curve defines the yield coordinate.
-            $$\sigma_{\text{offset}} = E \cdot (\varepsilon - 0.002)$$
-            """)
+            st.markdown(r"**Young's Modulus ($E$):** Determined as the slope of the toe-compensated linear elastic region:")
 
         with st.expander("IV. Ultimate Limits & Failure Truncation", expanded=False):
-            st.markdown(r"""
-            **Ultimate Tensile Strength (UTS):** Evaluated as the global maximum engineering stress achieved prior to the onset of localized necking or failure.
-            $$\text{UTS} = \max(\sigma) = \frac{F_{\max}}{A_0}$$
-            
-            **Fracture Definition & Noise Truncation:** To prevent post-failure machine rebound or sensor noise from corrupting data integrity, structural failure is strictly defined at the ultimate stress index. The dataset is programmatically truncated immediately at this peak ($i = i_{\text{UTS}}$), discarding all subsequent trailing data.
-            """)
+            st.markdown(r"**Ultimate Tensile Strength (UTS):** Evaluated as the global maximum engineering stress achieved prior to the onset of localized necking or failure.")
 
         with st.expander("V. Energy Integrals (Work & Toughness)", expanded=False):
-            st.markdown(r"""
-            **Absolute Work of Rupture ($W$):** The total thermodynamic energy required to fracture the specimen, calculated via trapezoidal numerical integration of the raw Force-Displacement curve.
-            $$W = \int_0^{L_f} F \, dL \quad (\text{Joules})$$
-            
-            **Modulus of Toughness ($U_T$):** The volumetric energy absorption capacity, representing the integrated area beneath the normalized engineering Stress-Strain envelope.
-            $$U_T = \int_0^{\varepsilon_f} \sigma \, d\varepsilon \quad (\text{MJ/m}^3)$$
-            """)
+            st.markdown(r"**Absolute Work of Rupture ($W$):** The total thermodynamic energy required to fracture the specimen, calculated via trapezoidal numerical integration of the raw Force-Displacement curve.")
 
-        st.markdown("**Auto-Generated Methodology Text** (Standardized excerpt for academic manuscripts):")
-        methods_text = (
-            "Mechanical property extraction was conducted using the Solomon Tensile Suite v2.1. "
-            "Raw load-displacement data were standardized and evaluated for machine compliance. "
-            "A dynamic sliding-window regression was utilized over the initial deformation phase "
-            "to identify the maximum linear elastic gradient (Young's modulus), which was subsequently extrapolated "
-            "to perform toe-compensation and align the data origin. Yield strength was isolated employing the "
-            "standard 0.2% strain offset technique. Ultimate tensile strength (UTS) was defined at the global stress maximum, "
-            "with all post-peak fracture and noise artifacts programmatically truncated to ensure data integrity. "
-            "Energy absorption metrics, including volumetric toughness (MJ/m³) and absolute work of rupture (J), "
-            "were calculated via trapezoidal numerical integration of the engineering stress-strain and "
-            "force-displacement envelopes, respectively."
-        )
-        st.text_area("", methods_text, height=180)
-
-        st.divider()
         excel_out = io.BytesIO()
         with pd.ExcelWriter(excel_out, engine='xlsxwriter') as writer:
-            # 1. Individual Test Records
             res_df.to_excel(writer, sheet_name='Individual_Results', index=False)
-            
-            # 2. Batch Summary Stats
             stats_df.to_excel(writer, sheet_name='Batch_Statistics')
             
-            # 3. Comparison Delta Analysis
             if 'comp_df' in locals():
                 comp_df.to_excel(writer, sheet_name='Comparative_Analysis', index=False)
 
-            # 4. Compile the full raw data mapping
+            # --- PROCESS RAW AND REPRESENTATIVE DATA HORIZONTALLY ---
+            master_raw_df = None
+            rep_raw_df = None
+            
             if master_raw_data_list:
-                master_raw_df = pd.concat(master_raw_data_list, ignore_index=True)
-                master_raw_df.to_excel(writer, sheet_name='Raw_Data', index=False)
+                # Concat horizontal side-by-side using axis=1
+                master_raw_df = pd.concat(master_raw_data_list, axis=1)
+                master_raw_df.to_excel(writer, sheet_name='Raw_Data_All', index=False)
+                
+                # Extract Representative sample into separate sheet
+                if rep_sample_name:
+                    rep_cols = [c for c in master_raw_df.columns if c.startswith(f"{rep_sample_name}_")]
+                    rep_raw_df = master_raw_df[rep_cols].dropna(how='all')
+                    # Rename columns to look clean (strip sample name prefix)
+                    rep_raw_df.columns = [c.replace(f"{rep_sample_name}_", "") for c in rep_raw_df.columns]
+                    rep_raw_df.to_excel(writer, sheet_name='Representative_Data', index=False)
 
-            # --- Apply auto-fitting logic loop for ALL Excel output sheets ---
-            for sheetname, df_ref in [('Individual_Results', res_df), 
-                                      ('Batch_Statistics', stats_df.reset_index()), 
-                                      ('Comparative_Analysis', comp_df if 'comp_df' in locals() else None),
-                                      ('Raw_Data', master_raw_df if master_raw_data_list else None)]:
+            # Loop to autofit all dynamic generated sheets
+            sheet_refs = [
+                ('Individual_Results', res_df), 
+                ('Batch_Statistics', stats_df.reset_index()), 
+                ('Comparative_Analysis', comp_df if 'comp_df' in locals() else None),
+                ('Raw_Data_All', master_raw_df),
+                ('Representative_Data', rep_raw_df)
+            ]
+            
+            for sheetname, df_ref in sheet_refs:
                 if df_ref is not None and sheetname in writer.sheets:
                     worksheet = writer.sheets[sheetname]
                     for i, col in enumerate(df_ref.columns):
-                        # Ensure cell contents are calculated securely and width padded slightly
                         column_len = max(df_ref[col].astype(str).map(len).max(), len(str(col))) + 2
                         worksheet.set_column(i, i, column_len)
             
-            # 5. Final Plot Embedding
             plot_sheet = writer.book.add_worksheet('Final_Visual_Report')
             plot_sheet.write('A1', f'Project: {project_name}')
             plot_sheet.write('A2', 'Note: This image is exported at 600 DPI for publication quality.')
             
             img_excel = io.BytesIO()
-            fig_journal.savefig(img_excel, format='png', dpi=300, bbox_inches='tight') # Reduced DPI for Excel to save space
+            fig_journal.savefig(img_excel, format='png', dpi=300, bbox_inches='tight') 
             img_excel.seek(0)
             plot_sheet.insert_image('A4', 'final_plot.png', {'image_data': img_excel, 'x_scale': 0.8, 'y_scale': 0.8})
 
