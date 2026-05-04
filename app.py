@@ -1,9 +1,9 @@
 """
-Solomon Tensile Master Pro v4.3
+Solomon Tensile Master Pro v4.4
 ─────────────────────────────────────────────────────────────────────────────
 Integrated platform:
-  Page 1 — Tensile Analysis      (Fixed Data Scaling + 50% Yield Slider)
-  Page 2 — Ageing Trend Analysis (Oven & UV-Xenon degradation science)
+  Page 1 — Tensile Analysis      (Rock-solid parsing + 50% Yield Slider)
+  Page 2 — Ageing Trend Analysis (Fully restored Analytics & Export Engine)
 ─────────────────────────────────────────────────────────────────────────────
 """
 
@@ -34,18 +34,15 @@ except ImportError:
     HAS_CANVAS = False
 
 # ═══════════════════════════════════════════════════════════════════════════
-# PAGE CONFIG
+# PAGE CONFIG & CSS
 # ═══════════════════════════════════════════════════════════════════════════
 st.set_page_config(
-    page_title="Tensile Master Pro 4.3 | Solomon Scientific",
+    page_title="Tensile Master Pro 4.4 | Solomon Scientific",
     page_icon="LOGO.png",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# ═══════════════════════════════════════════════════════════════════════════
-# GLOBAL CSS
-# ═══════════════════════════════════════════════════════════════════════════
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
@@ -71,7 +68,6 @@ div[data-testid="InputInstructions"], div[data-baseweb="tooltip"], [data-testid=
 input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance:none; }
 input[type="number"] { -moz-appearance:textfield; }
 
-/* ── Sidebar ── */
 [data-testid="stSidebar"] { background:var(--off) !important; border-right:1px solid var(--border) !important; }
 [data-testid="stSidebar"] h1,[data-testid="stSidebar"] h2,[data-testid="stSidebar"] h3 {
     font-family:var(--font-b) !important; font-size:0.68rem !important; font-weight:700 !important; letter-spacing:0.15em !important;
@@ -79,7 +75,6 @@ input[type="number"] { -moz-appearance:textfield; }
 }
 [data-testid="stSidebar"] hr { border:none !important; border-top:1px solid var(--border) !important; margin:0.6rem 0 !important; }
 
-/* ── Inputs ── */
 [data-testid="stSidebar"] input,[data-testid="stSidebar"] textarea,[data-testid="stSidebar"] select,
 .stSelectbox>div>div,.stTextInput>div>div>input,.stNumberInput>div>div>input {
     background:var(--white) !important; border:1px solid var(--border) !important; border-radius:3px !important; color:var(--text) !important;
@@ -88,12 +83,10 @@ input[type="number"] { -moz-appearance:textfield; }
 [data-testid="stFileUploadDropzone"] { background:var(--white) !important; border:1.5px dashed var(--border) !important; border-radius:3px !important; }
 [data-testid="stFileUploadDropzone"]:hover { border-color:var(--gold) !important; }
 
-/* ── Dropdown Visibility Fix ── */
 div[data-baseweb="popover"] > div, ul[data-baseweb="menu"] { background-color: var(--white) !important; }
 ul[data-baseweb="menu"] li { color: var(--text) !important; background-color: transparent !important; }
 ul[data-baseweb="menu"] li:hover { background-color: var(--off) !important; }
 
-/* ── Buttons ── */
 .stButton>button {
     background:var(--off) !important; color:var(--navy2) !important; border:1px solid var(--border) !important; border-radius:3px !important;
     font-family:var(--font-b) !important; font-weight:600 !important; font-size:0.75rem !important; letter-spacing:0.07em !important;
@@ -103,7 +96,6 @@ ul[data-baseweb="menu"] li:hover { background-color: var(--off) !important; }
 .stButton>button[kind="primary"] { background:linear-gradient(135deg,var(--gold2),var(--gold)) !important; color:var(--navy) !important; border:none !important; }
 [data-testid="stDownloadButton"]>button { background:var(--off) !important; color:var(--navy2) !important; border:1px solid var(--border) !important; width:100% !important; }
 
-/* ── Tabs & DataFrames ── */
 [data-testid="stTabs"] [role="tablist"] { background:var(--off); border-bottom:2px solid var(--border); padding:0; gap:0; }
 [data-testid="stTabs"] [role="tab"] { color:var(--muted) !important; font-family:var(--font-b) !important; font-size:0.74rem !important; font-weight:600 !important; letter-spacing:0.07em !important; text-transform:uppercase !important; padding:0.6rem 1.0rem !important; border-bottom:2px solid transparent !important; margin-bottom:-2px !important; }
 [data-testid="stTabs"] [role="tab"][aria-selected="true"] { border-bottom-color:var(--gold) !important; color:var(--navy) !important; background:var(--white) !important; }
@@ -167,7 +159,7 @@ def render_header(page_label=""):
     st.markdown(f"""
     <div style="display:flex;align-items:center;justify-content:space-between;padding:1.2rem 2rem;background:#002244;border-radius:4px;margin-bottom:1.25rem;">
       <div style="display:flex;align-items:center;gap:1.2rem;">{icon}
-        <div><div style="font-family:'Playfair Display',Georgia,serif;font-size:1.6rem;font-weight:700;color:#f0f4fb;line-height:1.1;">Solomon Tensile Master Pro<span style="color:#c9a84c;"> 4.3</span>{badge}</div>
+        <div><div style="font-family:'Playfair Display',Georgia,serif;font-size:1.6rem;font-weight:700;color:#f0f4fb;line-height:1.1;">Solomon Tensile Master Pro<span style="color:#c9a84c;"> 4.4</span>{badge}</div>
         <div style="font-family:'IBM Plex Sans',sans-serif;font-size:0.66rem;color:#a8b4c8;letter-spacing:0.18em;text-transform:uppercase;margin-top:3px;">Advanced Mechanical &amp; Ageing Analysis Framework &nbsp;·&nbsp; Solomon Scientific</div></div>
       </div>
     </div>""", unsafe_allow_html=True)
@@ -178,7 +170,7 @@ def render_sidebar_brand():
     st.markdown(f"""
     <div style="padding:0.75rem 0 0.3rem;text-align:center;">{icon}
       <div style="font-family:'IBM Plex Sans',sans-serif;font-size:0.58rem;color:#9c7a32;letter-spacing:0.2em;text-transform:uppercase;font-weight:700;">Solomon Scientific</div>
-      <div style="font-family:'Playfair Display',Georgia,serif;font-size:0.9rem;font-weight:700;color:#002244;">Master Pro <span style="color:#c9a84c;">4.3</span></div>
+      <div style="font-family:'Playfair Display',Georgia,serif;font-size:0.9rem;font-weight:700;color:#002244;">Master Pro <span style="color:#c9a84c;">4.4</span></div>
     </div>""", unsafe_allow_html=True)
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -335,7 +327,7 @@ def fit_degradation_models(days, retention):
         c = np.polyfit(d_v, r_v, 1)
         k_lin = -c[0]; R0_lin = c[1]
         def sl_linear(thresh, k=k_lin, R0=R0_lin): return np.inf if k <= 0 else max((R0 - thresh)/k, 0)
-        results["Linear"] = dict(params={"k (MPa/day)": round(k_lin,4)}, pred=np.polyval(c, days), r2=round(float(1 - np.sum((r_v - np.polyval(c, d_v))**2)/np.sum((r_v - r_v.mean())**2)),4), service_life_fn=sl_linear, eq=f"R(t) = {R0_lin:.1f} − {k_lin:.4f}·t")
+        results["Linear"] = dict(params={"k (MPa/day)": round(k_lin,4), "R0": R0_lin}, pred=np.polyval(c, days), r2=round(float(1 - np.sum((r_v - np.polyval(c, d_v))**2)/np.sum((r_v - r_v.mean())**2)),4), service_life_fn=sl_linear, eq=f"R(t) = {R0_lin:.1f} − {k_lin:.4f}·t")
     except Exception: pass
     try:
         c_exp = np.polyfit(d_v, np.log(np.maximum(r_v, 1e-6)/100.0), 1)
@@ -349,6 +341,19 @@ def fit_degradation_models(days, retention):
         def sl_pow(thresh, n=n_pow): return np.inf if n <= 0 else (100.0/thresh)**(1.0/n) - 1.0
         results["Power-law"] = dict(params={"n (exponent)": round(n_pow,4)}, pred=100.0 * (1.0 + days)**(-n_pow), r2=round(float(1 - np.sum((r_v - 100.0*(1.0+d_v)**(-n_pow))**2)/np.sum((r_v - r_v.mean())**2)),4), service_life_fn=sl_pow, eq=f"R(t) = 100·(1+t)^(−{n_pow:.4f})")
     except Exception: pass
+    
+    if HAS_SCIPY and len(d_v) >= 5:
+        try:
+            def two_phase(t, A, k1, k2): return A * np.exp(-k1*t) + (100.0-A) * np.exp(-k2*t)
+            popt, _ = curve_fit(two_phase, d_v, r_v, p0=[70, 0.05, 0.005], bounds=([0, 1e-6, 1e-6], [100, 5, 5]), maxfev=5000)
+            A2, k1_2, k2_2 = popt
+            def sl_2p(thresh, A=A2, k1=k1_2, k2=k2_2):
+                t_vals = np.linspace(0, 500, 5000)
+                idx = np.where(two_phase(t_vals, A, k1, k2) <= thresh)[0]
+                return float(t_vals[idx[0]]) if len(idx) > 0 else np.inf
+            results["Two-phase Exp."] = dict(params={"A (fast %)": round(A2,1), "k₁ (fast day⁻¹)": round(k1_2,5), "k₂ (slow day⁻¹)": round(k2_2,6)}, pred=two_phase(days, *popt), r2=round(float(1 - np.sum((r_v - two_phase(d_v, *popt))**2)/np.sum((r_v - r_v.mean())**2)),4), service_life_fn=sl_2p, eq=f"R(t) = {A2:.1f}·exp(−{k1_2:.4f}t) + {100-A2:.1f}·exp(−{k2_2:.5f}t)")
+        except Exception: pass
+
     return results if results else None
 
 def compute_degradation_rate(days, retention):
@@ -365,6 +370,36 @@ def compute_ci(mean, sd, n, alpha=0.05):
     if pd.isna(sd) or pd.isna(n) or n < 2: return sd if not pd.isna(sd) else 0.0
     return float(t_dist.ppf(1-alpha/2, df=n-1) * sd / np.sqrt(n)) if HAS_SCIPY else float(1.96 * sd / np.sqrt(n))
 
+def build_ageing_template():
+    forms, conds, days, np.random.seed(42) = ["Pure PBAT", "PBAT/PLA 80:20", "PBAT/PLA+5%NFC"], ["Oven", "UV-Xenon"], [0, 7, 14, 21, 28], None
+    rows = []
+    base = {"Pure PBAT": dict(E=520, UTS=22, Yield=12, Elong=680, Tough=0.12, Resil=0.0014), "PBAT/PLA 80:20": dict(E=780, UTS=32, Yield=18, Elong=420, Tough=0.09, Resil=0.0021), "PBAT/PLA+5%NFC": dict(E=950, UTS=38, Yield=22, Elong=310, Tough=0.08, Resil=0.0026)}
+    decay = {"Oven": dict(E=0.004, UTS=0.006, Yield=0.005, Elong=-0.003, Tough=0.007, Resil=0.005), "UV-Xenon": dict(E=0.006, UTS=0.010, Yield=0.008, Elong=-0.004, Tough=0.011, Resil=0.008)}
+    for f in forms:
+        for c in conds:
+            for d in days:
+                b = base[f]; dc = decay[c]
+                def val(prop, prp): r = b[prop] * np.exp(-dc[prp] * d); return round(r, 2), round(r * 0.06, 2)
+                E_m, E_s = val("E", "E"); U_m, U_s = val("UTS", "UTS"); Y_m, Y_s = val("Yield", "Yield"); T_m, T_s = val("Tough", "Tough"); R_m, R_s = val("Resil", "Resil")
+                rows.append({"Formulation": f, "Condition": c, "Days": d, "n": 5, "E_MPa": E_m, "E_SD": E_s, "UTS_MPa": U_m, "UTS_SD": U_s, "Yield_MPa": Y_m, "Yield_SD": Y_s, "Elongation_pct": round(b["Elong"] * np.exp(dc["Elong"] * d), 1), "Elongation_SD": round(b["Elong"] * 0.08, 1), "Toughness_MJm3": T_m, "Toughness_SD": T_s, "Resilience_MJm3": R_m, "Resilience_SD": R_s})
+    return pd.DataFrame(rows)
+
+def template_to_excel():
+    df, buf = build_ageing_template(), io.BytesIO()
+    with pd.ExcelWriter(buf, engine='xlsxwriter') as w:
+        df.to_excel(w, index=False, sheet_name='Ageing_Data')
+        ws, wb = w.sheets['Ageing_Data'], w.book
+        hdr_fmt = wb.add_format({'bold':True,'bg_color':'#002244','font_color':'#f0f4fb','border':1,'align':'center','text_wrap':True,'valign':'vcenter'})
+        for i, col in enumerate(df.columns):
+            max_val_len = df[col].astype(str).str.len().max()
+            ws.set_column(i, i, max(len(str(col)), 0 if pd.isna(max_val_len) else max_val_len) + 3)
+            ws.write(0, i, str(col), hdr_fmt)
+        ws.freeze_panes(1, 4); notes_ws = wb.add_worksheet('Instructions')
+        instructions = [("Formulation", "Name of each composite formulation"), ("Condition", "Ageing condition: 'Oven' or 'UV-Xenon'"), ("Days", "Ageing duration (Day 0 = control)"), ("n", "Number of replicate specimens per group"), ("E_MPa", "Mean Young's Modulus [MPa]"), ("E_SD", "Standard deviation of Young's Modulus"), ("UTS_MPa", "Mean UTS [MPa]"), ("UTS_SD", "Standard deviation of UTS"), ("Yield_MPa", "Mean Yield Stress [MPa]"), ("Yield_SD", "Standard deviation of Yield Stress"), ("Elongation_pct", "Mean Elongation at Break [%]"), ("Elongation_SD", "Standard dev of Elongation"), ("Toughness_MJm3", "Mean Toughness [MJ/m³]"), ("Toughness_SD", "Standard dev of Toughness"), ("Resilience_MJm3", "Mean Modulus of Resilience [MJ/m³]"), ("Resilience_SD", "Standard dev of Resilience")]
+        for ri, (col, desc) in enumerate(instructions): notes_ws.write(ri+1, 0, col, wb.add_format({'bold':True})); notes_ws.write(ri+1, 1, desc)
+        notes_ws.set_column(0, 0, 20); notes_ws.set_column(1, 1, 80); notes_ws.write(0, 0, "Column", wb.add_format({'bold':True,'underline':True})); notes_ws.write(0, 1, "Description", wb.add_format({'bold':True,'underline':True}))
+    buf.seek(0); return buf.getvalue()
+
 def load_ageing_data(file):
     try:
         ext = file.name.rsplit('.',1)[-1].lower()
@@ -372,8 +407,7 @@ def load_ageing_data(file):
         df.columns = [str(c).strip() for c in df.columns]
         missing = [c for c in ["Formulation","Condition","Days"] if c not in df.columns]
         if missing: st.error(f"Missing required columns: {missing}"); return None
-        df["Days"] = pd.to_numeric(df["Days"], errors='coerce')
-        df["n"]    = pd.to_numeric(df.get("n", pd.Series([5]*len(df))), errors='coerce').fillna(5)
+        df["Days"] = pd.to_numeric(df["Days"], errors='coerce'); df["n"] = pd.to_numeric(df.get("n", pd.Series([5]*len(df))), errors='coerce').fillna(5)
         for col in [c for c in df.columns if c not in ["Formulation","Condition","Days","n"]]: df[col] = pd.to_numeric(df[col], errors='coerce')
         return df.dropna(subset=["Days"])
     except Exception as e: st.error(f"Error loading ageing data: {e}"); return None
@@ -461,7 +495,7 @@ with st.sidebar:
         if use_arrhenius:
             arr_temps_str = st.text_input("Oven Temperatures (°C, comma-separated)", "60, 70, 80")
 
-    st.markdown("""<div style="padding:0.6rem 0 0.3rem;text-align:center;font-family:'IBM Plex Sans',sans-serif;font-size:0.6rem;color:#7f8c8d;letter-spacing:0.1em;">Research & Academic Use Only · v4.3</div>""", unsafe_allow_html=True)
+    st.markdown("""<div style="padding:0.6rem 0 0.3rem;text-align:center;font-family:'IBM Plex Sans',sans-serif;font-size:0.6rem;color:#7f8c8d;letter-spacing:0.1em;">Research & Academic Use Only · v4.4</div>""", unsafe_allow_html=True)
 
 # ═══════════════════════════════════════════════════════════════════════════
 # PAGE 1 — TENSILE ANALYSIS
@@ -502,13 +536,11 @@ if page == "🔬 Tensile Analysis":
     if uploaded_files:
         all_results=[]; plot_data={}; sample_colors={}
         
-        # --- GLOBAL COLUMN DETECTION ---
         first_df = smart_load(uploaded_files[0], skip_header_rows)
         global_cols = first_df.columns.tolist() if first_df is not None else []
         
         force_kws = ['stress', 'sforzo', 'mpa', 'sigma', 'force', 'load', 'n', 'lbf', 'kgf', 'str']
         def_f = next((c for c in global_cols if any(k in str(c).lower() for k in force_kws)), None)
-        
         disp_kws = ['strain', 'disp', 'ext', 'mm', 'elongation', '%', 'pos', 'deformation', 'def']
         def_d = next((c for c in global_cols if any(k in str(c).lower() for k in disp_kws)), None)
         
@@ -523,7 +555,6 @@ if page == "🔬 Tensile Analysis":
         f_idx = global_cols.index(def_f) if def_f in global_cols else 0
         d_idx = global_cols.index(def_d) if def_d in global_cols else (1 if len(global_cols) > 1 else 0)
 
-        # --- GLOBAL BULK UI ---
         with st.expander("⚡ Global Settings & Bulk Apply", expanded=True):
             st.markdown("**1. Global Column Selection**")
             gc1, gc2 = st.columns(2)
@@ -544,7 +575,6 @@ if page == "🔬 Tensile Analysis":
                         st.session_state[f"val_{f.name}_sl"]=bulk_v
                 st.rerun()
 
-        # --- PROCESSING LOOP ---
         for idx, file in enumerate(uploaded_files):
             if file is None: continue
             df_raw = smart_load(file, skip_header_rows)
@@ -554,7 +584,7 @@ if page == "🔬 Tensile Analysis":
             d_col = global_d_col
             
             if f_col not in df_raw.columns or d_col not in df_raw.columns:
-                st.error(f"File '{file.name}' missing columns '{f_col}' or '{d_col}'. Check your 'Metadata Rows to Skip' setting in the sidebar.")
+                st.error(f"File '{file.name}' missing columns '{f_col}' or '{d_col}'. Check your 'Metadata Rows to Skip' setting.")
                 continue
 
             with st.expander(f"📄 {clean_label(file.name)}", expanded=False):
@@ -576,20 +606,10 @@ if page == "🔬 Tensile Analysis":
                 if "Digitized" in str(file.name):
                     stress_raw_arr = df_c[f_col].values; strain_raw_arr = df_c[d_col].values
                 else:
-                    # SMART BYPASS: If the column is already strain or stress, bypass geometry conversion
                     is_strain = any(k in str(d_col).lower() for k in ['strain', '%', 'str'])
                     is_stress = any(k in str(f_col).lower() for k in ['stress', 'mpa', 'sigma', 'sforzo'])
-                    
-                    if is_strain:
-                        strain_raw_arr = df_c[d_col].values
-                    else:
-                        disp_mm = df_c[d_col].values * u_scale
-                        strain_raw_arr = (disp_mm / gauge_length) * 100.0
-                        
-                    if is_stress:
-                        stress_raw_arr = df_c[f_col].values
-                    else:
-                        stress_raw_arr = df_c[f_col].values / area
+                    strain_raw_arr = df_c[d_col].values if is_strain else (df_c[d_col].values * u_scale / gauge_length) * 100.0
+                    stress_raw_arr = df_c[f_col].values if is_stress else df_c[f_col].values / area
                     
                 if smooth_win > 1:
                     stress_raw_arr = pd.Series(stress_raw_arr).rolling(smooth_win,min_periods=1).mean().values
@@ -635,7 +655,6 @@ if page == "🔬 Tensile Analysis":
         journal_fig = generate_journal_fig(plot_data,sample_colors,j_settings)
         mean_curve  = compute_mean_curve(plot_data)
 
-        # ── ADD TO AGEING DATABASE BUTTON ──
         section_hdr("Send Batch to Ageing Database","📤")
         st.markdown(f"Current tag: **{form_tag}** | **{cond_tag}** | **Day {days_tag}** | n = {n_tag}")
         if st.button("➕ Add this batch to Ageing Database", type="primary"):
@@ -654,7 +673,6 @@ if page == "🔬 Tensile Analysis":
             st.session_state["ageing_db"] = pd.concat([st.session_state["ageing_db"], row_df], ignore_index=True)
             st.success(f"✓ Added {form_tag} / {cond_tag} / Day {days_tag} → Ageing Database ({len(st.session_state['ageing_db'])} rows total).")
 
-        # ── OUTPUT TABS ──
         out_tabs = st.tabs(["📈 Stress-Strain","🔩 Hollomon & True S-S","📐 Secant & Resilience","📉 Weibull & Mean Curve","📊 Statistics & QC","📋 Full Records","💾 Export"])
 
         with out_tabs[0]:
@@ -705,6 +723,7 @@ if page == "🔬 Tensile Analysis":
                             lx=np.log(te_p[v]); ly=np.log(ts_p[v])
                             fig_h.add_trace(go.Scatter(x=lx,y=ly,mode='markers',name=name,marker=dict(color=col,size=5,opacity=0.7)))
                             lxf=np.linspace(lx.min(),lx.max(),60)
+                            # FIXED: Proper predictive line calculation for Hollomon
                             fig_h.add_trace(go.Scatter(x=lxf,y=r["h_n"]*lxf+np.log(r["h_K"]),mode='lines',line=dict(color=col,width=1.5,dash='dash'),showlegend=False))
                     hrows.append({"Sample":name,"n":r["h_n"],"K (MPa)":r["h_K"],"R²":r["h_r2"],"Class":r["mat_class"]})
                 if fig_h.data:
@@ -781,20 +800,16 @@ if page == "🔬 Tensile Analysis":
             ec1,ec2=st.columns(2)
             with ec1:
                 st.markdown("**📊 Generate Full Excel Report**")
-                st.caption("Exports all raw data arrays, analytical results, and high-res chart images into one comprehensive workbook.")
                 xl_buf=io.BytesIO()
                 try:
                     with pd.ExcelWriter(xl_buf,engine='xlsxwriter') as w:
                         res_df.to_excel(w,sheet_name='Results',index=False)
                         stats_df.to_excel(w,sheet_name='Batch_Statistics')
-                        
-                        # 1. Raw Curves (Eng & True)
                         raw_fs=[]
                         for name,r in plot_data.items():
                             raw_fs.append(pd.DataFrame({f"{name}_Strain(%)":r["strain"],f"{name}_Stress(MPa)":r["stress"], f"{name}_TrueStrain(abs)":r["true_strain"],f"{name}_TrueStress(MPa)":r["true_stress"]}))
                         if raw_fs: pd.concat(raw_fs,axis=1).to_excel(w,sheet_name='Raw_Curves',index=False)
                         
-                        # 2. Hollomon Summary & Raw Data
                         pd.DataFrame([{"Sample":rr["Sample"],"n":rr["Hollomon n"],"K(MPa)":rr["Hollomon K [MPa]"],"R²":rr["Hollomon R²"]} for rr in all_results]).to_excel(w,sheet_name='Hollomon_Summary',index=False)
                         hol_raw_dfs = []
                         for name, r in plot_data.items():
@@ -805,27 +820,17 @@ if page == "🔬 Tensile Analysis":
                                     hol_raw_dfs.append(pd.DataFrame({f"{name}_ln(TrueStrain)": np.log(te_p[v]), f"{name}_ln(TrueStress)": np.log(ts_p[v])}))
                         if hol_raw_dfs: pd.concat(hol_raw_dfs, axis=1).to_excel(w, sheet_name='Hollomon_RawData', index=False)
 
-                        # 3. Secant Data
                         if 'sec_rows' in locals(): pd.DataFrame(sec_rows).to_excel(w, sheet_name='Secant_Data', index=False)
-                        
-                        # 4. Weibull Data
                         if 'wb_data' in locals() and wb_data: pd.DataFrame({"ln(UTS)": wb_data["x"], "ln(ln(1/(1-Pf)))": wb_data["y"]}).to_excel(w, sheet_name='Weibull_Data', index=False)
-                        
-                        # 5. Mean Curve Data
                         if 'mean_curve' in locals() and mean_curve: pd.DataFrame({"Strain(%)": mean_curve["strain"], "Mean_Stress(MPa)": mean_curve["mean"], "Upper_SD": mean_curve["upper"], "Lower_SD": mean_curve["lower"]}).to_excel(w, sheet_name='Mean_Curve_Data', index=False)
                         
-                        # ============================================================
-                        # PLOT EMBEDDING GENERATION
-                        # ============================================================
                         plt.rcParams.update({"font.family":"serif","font.size":10})
                         
-                        # A. Standard Journal Plot
                         ps=w.book.add_worksheet('Plot_Journal')
                         ps.write('A1','Engineering Stress-Strain Curve')
                         ie=io.BytesIO(); journal_fig.savefig(ie,format='png',dpi=200,bbox_inches='tight'); ie.seek(0)
                         ps.insert_image('A3','p1.png',{'image_data':ie})
                         
-                        # B. True Stress-Strain Plot
                         fig_t_exp, ax_t = plt.subplots(figsize=(7,5))
                         for name, r in plot_data.items(): ax_t.plot(r["true_strain"]*100, r["true_stress"], label=name, color=sample_colors.get(name,"#000"))
                         ax_t.set_xlabel("True Strain (%)"); ax_t.set_ylabel("True Stress (MPa)"); ax_t.legend(); fig_t_exp.tight_layout()
@@ -833,7 +838,6 @@ if page == "🔬 Tensile Analysis":
                         w.book.add_worksheet('Plot_TrueSS').insert_image('A1', 'p2.png', {'image_data': buf_t})
                         plt.close(fig_t_exp)
                         
-                        # C. Log-Log Hollomon Plot
                         fig_h_exp, ax_h = plt.subplots(figsize=(7,5))
                         for name, r in plot_data.items():
                             if not np.isnan(r["h_n"]):
@@ -849,7 +853,6 @@ if page == "🔬 Tensile Analysis":
                         w.book.add_worksheet('Plot_Hollomon').insert_image('A1', 'p3.png', {'image_data': buf_h})
                         plt.close(fig_h_exp)
                         
-                        # D. Secant Modulus Plot
                         fig_s_exp, ax_s = plt.subplots(figsize=(7,5))
                         for name, r in plot_data.items():
                             sx = sorted(r["secant"].keys()); sy = [r["secant"][k] for k in sx]
@@ -859,7 +862,6 @@ if page == "🔬 Tensile Analysis":
                         w.book.add_worksheet('Plot_Secant').insert_image('A1', 'p4.png', {'image_data': buf_s})
                         plt.close(fig_s_exp)
 
-                        # E. Weibull Plot
                         if 'wb_data' in locals() and wb_data:
                             fig_w_exp, ax_w = plt.subplots(figsize=(7,5))
                             ax_w.plot(wb_data["x"], wb_data["y"], 'o', color='#002244', ms=8)
@@ -869,7 +871,6 @@ if page == "🔬 Tensile Analysis":
                             w.book.add_worksheet('Plot_Weibull').insert_image('A1', 'p5.png', {'image_data': buf_w})
                             plt.close(fig_w_exp)
 
-                        # F. Mean Curve Plot
                         if 'mean_curve' in locals() and mean_curve:
                             fig_m_exp, ax_m = plt.subplots(figsize=(7,5))
                             ax_m.fill_between(mean_curve["strain"], mean_curve["lower"], mean_curve["upper"], alpha=0.2, color='#555')
@@ -880,7 +881,7 @@ if page == "🔬 Tensile Analysis":
                             w.book.add_worksheet('Plot_MeanCurve').insert_image('A1', 'p6.png', {'image_data': buf_m})
                             plt.close(fig_m_exp)
 
-                    st.download_button("📥 Download Excel Report",xl_buf.getvalue(), "Tensile_Report_v4-3.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
+                    st.download_button("📥 Download Excel Report",xl_buf.getvalue(), "Tensile_Report_v4-4.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
                 except Exception as e: st.error(f"Export error: {e}")
             with ec2:
                 st.markdown("**🖼️ 600 DPI Journal TIFF**")
@@ -991,6 +992,29 @@ else:
         fig_ret.update_layout(plot_bgcolor='#fff', paper_bgcolor='#fff', height=560, xaxis=dict(title="<b>Ageing Time (days)</b>", tickvals=avail_days, range=[-1, max(avail_days)*1.08], **AXIS), yaxis=dict(title=f"<b>Retention of {AGEING_PROP_LABELS[ret_prop]} (%)</b>", range=[0, 110], **AXIS), margin=dict(l=65,r=40,t=25,b=60))
         st.plotly_chart(fig_ret, use_container_width=True, config=JCFG)
 
+        section_hdr("Retention Heatmap (All Properties × Formulation × Condition)","🗺️","#002244")
+        heat_day = st.selectbox("Ageing Day for Heatmap", avail_days, index=len(avail_days)-1, key="hday")
+        heat_rows=[]; heat_labels=[]
+        for prop_k in avail_props:
+            row_vals=[]
+            for form in formulations:
+                for cond in conditions:
+                    sub=ag_df[(ag_df["Formulation"]==form)&(ag_df["Condition"]==cond)&(ag_df["Days"]==heat_day)]
+                    sub0=ag_df[(ag_df["Formulation"]==form)&(ag_df["Condition"]==cond)&(ag_df["Days"]==0)]
+                    if sub.empty or sub0.empty or prop_k not in ag_df.columns: row_vals.append(np.nan); continue
+                    v=sub[prop_k].values[0]; v0=sub0[prop_k].values[0]
+                    row_vals.append(round(v/v0*100,1) if v0 and v0!=0 else np.nan)
+            heat_rows.append(row_vals); heat_labels.append(AGEING_PROP_LABELS[prop_k])
+        x_labels=[f"{f}\n{c}" for f in formulations for c in conditions]
+        fig_hm = go.Figure(go.Heatmap(z=heat_rows, x=x_labels, y=heat_labels, colorscale=[[0,'#c0392b'],[0.5,'#f39c12'],[1,'#1e8449']], zmid=100, zmin=50, zmax=110, text=[[f"{v:.1f}%" if not np.isnan(v) else "—" for v in row] for row in heat_rows], texttemplate="%{text}", textfont=dict(size=11, family="IBM Plex Mono"), hovertemplate="<b>%{y}</b><br>%{x}<br>Retention = %{text}<extra></extra>", colorbar=dict(title="Retention (%)", ticksuffix="%")))
+        fig_hm.update_layout(plot_bgcolor='#fff', paper_bgcolor='#fff', height=max(300, len(avail_props)*55+80), xaxis=dict(tickfont=dict(size=11), side='bottom'), yaxis=dict(tickfont=dict(size=11)), margin=dict(l=140,r=60,t=30,b=60))
+        st.plotly_chart(fig_hm, use_container_width=True, config=JCFG)
+        
+        # FIXED: Proper Rendering of the Retention Table
+        if retention_table:
+            st.markdown("---")
+            st.dataframe(pd.DataFrame(retention_table), hide_index=True, use_container_width=True)
+
     with ag_tabs[2]:
         section_hdr("Degradation Kinetics Model Fitting","⚗️","#1a3a1a")
         kin_prop = st.selectbox("Property for Kinetics", avail_props, format_func=lambda k: f"{AGEING_PROP_LABELS[k]} ({AGEING_PROP_UNITS[k]})",key="kp")
@@ -1014,7 +1038,26 @@ else:
                 
                 if ag_show_fit:
                     for mname, mres in fit_results.items():
-                        fig_k.add_trace(go.Scatter(x=t_ext2, y=np.polyval(np.polyfit(list(vd),list(vr),1), 0) - mres['params'].get('k (MPa/day)',0)*t_ext2 if mname == "Linear" else (100.0*np.exp(-mres['params'].get('k (day⁻¹)',0)*t_ext2) if mname == "First-order" else 100.0*(1+t_ext2)**(-mres['params'].get('n (exponent)',0))), mode='lines', name=f"{mname} (R²={mres['r2']})", line=dict(color={"Linear":"#002244","First-order":"#c9a84c","Power-law":"#1e8449","Two-phase Exp.":"#7d3c98"}.get(mname,'#555'), width=2, dash='dot' if mname!="First-order" else 'solid')))
+                        # FIXED: Proper predictive lines decoupled from messy inline lambdas
+                        pred_ext = None
+                        if mname == "Linear":
+                            k_ = mres['params'].get('k (MPa/day)', 0)
+                            r0_ = mres['params'].get('R0', 100) # R0 was safely stored in the model engine above
+                            pred_ext = r0_ - k_ * t_ext2
+                        elif mname == "First-order":
+                            k_ = mres['params'].get('k (day⁻¹)', 0)
+                            pred_ext = 100.0 * np.exp(-k_ * t_ext2)
+                        elif mname == "Power-law":
+                            n_ = mres['params'].get('n (exponent)', 0)
+                            pred_ext = 100.0 * (1 + t_ext2)**(-n_)
+                        elif mname == "Two-phase Exp." and HAS_SCIPY:
+                            A_ = mres['params'].get('A (fast %)', 70)
+                            k1_ = mres['params'].get('k₁ (fast day⁻¹)', 0.05)
+                            k2_ = mres['params'].get('k₂ (slow day⁻¹)', 0.005)
+                            pred_ext = A_ * np.exp(-k1_ * t_ext2) + (100 - A_) * np.exp(-k2_ * t_ext2)
+                            
+                        if pred_ext is not None:
+                            fig_k.add_trace(go.Scatter(x=t_ext2, y=pred_ext, mode='lines', name=f"{mname} (R²={mres['r2']})", line=dict(color={"Linear":"#002244","First-order":"#c9a84c","Power-law":"#1e8449","Two-phase Exp.":"#7d3c98"}.get(mname,'#555'), width=2, dash='dot' if mname!="First-order" else 'solid')))
 
                 fig_k.update_layout(title=dict(text=f"<b>{lbl}</b>",font=dict(size=14,color='#002244'),x=0.01), plot_bgcolor='#fff', paper_bgcolor='#fff', height=430, xaxis=dict(title="<b>Ageing Time (days)</b>", range=[0, max(avail_days)*1.65], tickvals=avail_days, **AXIS), yaxis=dict(title=f"<b>Retention of {AGEING_PROP_LABELS[kin_prop]} (%)</b>", range=[0,110], **AXIS), margin=dict(l=65,r=40,t=45,b=60))
                 st.plotly_chart(fig_k, use_container_width=True, config=JCFG)
@@ -1052,15 +1095,229 @@ else:
                 fig_hh.update_layout(plot_bgcolor='#fff',paper_bgcolor='#fff',height=430)
                 st.plotly_chart(fig_hh, use_container_width=True, config=JCFG)
 
+    # FIXED: Fully restored Tab 4 (Radar Chart)
     with ag_tabs[4]:
-        st.info("Additional Multi-property and Statistics tools are available in tabs 5-8.")
+        section_hdr("Multi-Property Radar Chart (Retention %)","🕸️","#1a003a")
+        rad_forms = st.multiselect("Formulations", formulations, default=formulations[:2], key="rdf")
+        rad_conds = st.multiselect("Conditions",   conditions,   default=conditions[:1],   key="rdc")
+        rad_days  = st.multiselect("Days to compare", avail_days, default=[0, avail_days[-1]], key="rdd")
 
+        prop_names = [AGEING_PROP_LABELS[k] for k in avail_props]
+        prop_cols  = avail_props
+
+        fig_rad = go.Figure()
+        for form in rad_forms:
+            for cond in rad_conds:
+                for day in rad_days:
+                    sub0 = ag_df[(ag_df["Formulation"]==form)&(ag_df["Condition"]==cond)&(ag_df["Days"]==0)]
+                    sub  = ag_df[(ag_df["Formulation"]==form)&(ag_df["Condition"]==cond)&(ag_df["Days"]==day)]
+                    if sub0.empty or sub.empty: continue
+                    r_vals=[]
+                    for pc in prop_cols:
+                        if pc not in ag_df.columns: r_vals.append(np.nan); continue
+                        v=sub[pc].values[0]; v0=sub0[pc].values[0]
+                        r_vals.append(round(v/v0*100,1) if v0 and v0!=0 else np.nan)
+                    if all(np.isnan(v) for v in r_vals): continue
+                    r_disp = [v if not np.isnan(v) else 0 for v in r_vals]
+                    col = cond_colors.get(cond,"#002244")
+                    dash_r= "dash" if ("uv" in cond.lower() or "xen" in cond.lower()) else "solid"
+                    lbl = f"{form} — {cond} — Day {day}"
+                    fig_rad.add_trace(go.Scatterpolar(
+                        r=r_disp+[r_disp[0]], theta=prop_names+[prop_names[0]], name=lbl, mode='lines+markers',
+                        line=dict(color=col, width=2, dash=dash_r), marker=dict(color=col, size=7), opacity=0.85 if day==0 else 1.0,
+                        fill='toself', fillcolor=f"rgba({','.join(str(int(col.lstrip('#')[i:i+2],16)) for i in (0,2,4))},0.08)"))
+        fig_rad.add_trace(go.Scatterpolar(r=[100]*len(prop_names)+[100], theta=prop_names+[prop_names[0]], name="100% Reference", mode='lines', line=dict(color='#c0392b', width=1, dash='dot'), opacity=0.6))
+        fig_rad.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0,120], tickfont=dict(size=10,family="IBM Plex Mono"), ticksuffix="%", gridcolor='#e0e0e0'), angularaxis=dict(tickfont=dict(size=12,family="IBM Plex Sans",color='#002244'))), showlegend=True, legend=dict(font=dict(family="Times New Roman",size=11)), paper_bgcolor='#fff', height=580, margin=dict(l=60,r=60,t=40,b=40))
+        st.plotly_chart(fig_rad, use_container_width=True, config=JCFG)
+
+    # FIXED: Fully restored Tab 5 (Service Life Prediction)
+    with ag_tabs[5]:
+        section_hdr("Service Life Prediction & Extrapolation","⏱️","#1a1a3a")
+        sl_prop  = st.selectbox("Property", avail_props, format_func=lambda k: f"{AGEING_PROP_LABELS[k]} ({AGEING_PROP_UNITS[k]})", key="slp")
+        sl_forms = st.multiselect("Formulations", formulations, default=formulations, key="slf")
+        sl_conds = st.multiselect("Conditions",   conditions,   default=conditions,   key="slc")
+        sl_model = st.selectbox("Kinetic Model for Prediction", ["First-order","Power-law","Linear","Two-phase Exp."])
+        sl_extdays= st.slider("Extrapolation Horizon (days)", 28, 365, 90)
+
+        t_sl = np.linspace(0, sl_extdays, 400)
+        fig_sl = go.Figure()
+        fig_sl.add_vline(x=max(avail_days), line=dict(color='#5a6a7e',width=1.5,dash='dash'))
+        fig_sl.add_hline(y=ag_failure_thresh, line=dict(color='#c0392b',width=1.5,dash='dot'), annotation_text=f"Failure threshold {ag_failure_thresh}%")
+
+        sl_table = []
+        for form in sl_forms:
+            for cond in sl_conds:
+                days_, ret_ = get_retention(ag_df, form, cond, sl_prop)
+                valid = [(d,r) for d,r in zip(days_,ret_) if not np.isnan(r)]
+                if len(valid) < 3: continue
+                vd,vr = zip(*valid)
+                fits = fit_degradation_models(list(vd),list(vr))
+                if not fits or sl_model not in fits: continue
+                mres = fits[sl_model]
+                col, mark, dash, lbl = cond_colors.get(cond,"#002244"), form_markers.get(form,"circle"), "dash" if ("uv" in cond.lower() or "xen" in cond.lower()) else "solid", f"{form} — {cond}"
+
+                fig_sl.add_trace(go.Scatter(x=list(vd),y=list(vr),mode='markers', name=f"{lbl} (data)",showlegend=True, marker=dict(symbol=mark,size=10,color=col,line=dict(width=2,color='#fff'))))
+                
+                # Calculation for Extrapolation
+                pred_sl = np.clip(mres["pred"][:len(t_sl)] if len(mres["pred"])>=len(t_sl) else np.interp(t_sl, np.linspace(0,max(avail_days),len(mres["pred"])), mres["pred"]), 0, 110)
+                kp = mres["params"]
+                if sl_model == "First-order": pred_sl = 100.0*np.exp(-kp.get('k (day⁻¹)',0)*t_sl)
+                elif sl_model == "Linear": pred_sl = np.maximum(kp.get('R0',100) - kp.get('k (MPa/day)',0)*t_sl, 0)
+                elif sl_model == "Power-law": pred_sl = 100.0*(1+t_sl)**(-kp.get('n (exponent)',0))
+                elif sl_model == "Two-phase Exp." and HAS_SCIPY: pred_sl = kp.get('A (fast %)',70)*np.exp(-kp.get('k₁ (fast day⁻¹)',0.05)*t_sl)+(100-kp.get('A (fast %)',70))*np.exp(-kp.get('k₂ (slow day⁻¹)',0.005)*t_sl)
+
+                in_mask = t_sl <= max(avail_days)
+                fig_sl.add_trace(go.Scatter(x=t_sl[in_mask],y=pred_sl[in_mask],mode='lines', name=lbl,line=dict(color=col,width=2.5,dash=dash),showlegend=False))
+                fig_sl.add_trace(go.Scatter(x=t_sl[~in_mask],y=pred_sl[~in_mask],mode='lines', name=f"{lbl} (extrap.)",line=dict(color=col,width=2,dash='dot'), opacity=0.75,showlegend=False))
+
+                sl_fn = mres.get("service_life_fn")
+                t_fail = sl_fn(ag_failure_thresh) if sl_fn else np.inf
+                if np.isfinite(t_fail) and t_fail <= sl_extdays:
+                    fig_sl.add_trace(go.Scatter(x=[t_fail],y=[ag_failure_thresh],mode='markers', name=f"t_f {lbl}={t_fail:.0f}d", marker=dict(symbol='x',size=16,color=col, line=dict(width=3,color='#c0392b')),showlegend=True))
+                sl_table.append({"Formulation":form,"Condition":cond,"Model":sl_model,"R²":mres["r2"], f"Service Life @ {ag_failure_thresh}% retention (days)": f"{t_fail:.0f}" if np.isfinite(t_fail) else ">365", "Degradation Rate (%/day)":compute_degradation_rate(list(vd),list(vr)), "Equation":mres["eq"]})
+
+        fig_sl.update_layout(plot_bgcolor='#fff', paper_bgcolor='#fff', height=600, xaxis=dict(title="<b>Ageing Time (days)</b>",range=[0,sl_extdays], **AXIS), yaxis=dict(title=f"<b>Retention of {AGEING_PROP_LABELS[sl_prop]} (%)</b>", range=[0,110], **AXIS), margin=dict(l=65,r=40,t=25,b=60))
+        st.plotly_chart(fig_sl, use_container_width=True, config=JCFG)
+        if sl_table: st.dataframe(pd.DataFrame(sl_table), hide_index=True, use_container_width=True)
+
+    # FIXED: Fully restored Tab 6 (Statistics & ANOVA)
+    with ag_tabs[6]:
+        section_hdr("Batch Statistics & One-Way ANOVA","📊","#1a1a00")
+        stat_prop = st.selectbox("Property", avail_props, format_func=lambda k: f"{AGEING_PROP_LABELS[k]} ({AGEING_PROP_UNITS[k]})", key="sp")
+        stat_cond = st.selectbox("Condition", conditions, key="sc")
+
+        stat_rows = []
+        for form in formulations:
+            sub = ag_df[(ag_df["Formulation"]==form)&(ag_df["Condition"]==stat_cond)].sort_values("Days")
+            if sub.empty or stat_prop not in sub.columns: continue
+            for _, row in sub.iterrows():
+                m, sd_, n_ = row.get(stat_prop, np.nan), row.get(SD_COLS.get(stat_prop,""), np.nan), row.get("n",5)
+                ret_=(m/sub[sub["Days"]==0][stat_prop].values[0]*100 if len(sub[sub["Days"]==0])>0 and sub[sub["Days"]==0][stat_prop].values[0]!=0 else np.nan)
+                stat_rows.append({"Formulation":form, "Days":int(row["Days"]), "Mean":round(m,3) if not np.isnan(m) else "—", "SD":round(sd_,3) if not np.isnan(sd_) else "—", "n":int(n_), "95% CI ±":round(compute_ci(m, sd_, n_),3), f"Retention (%)":round(ret_,1) if not np.isnan(ret_) else "—", "CV (%)":round(sd_/m*100,1) if (not np.isnan(sd_) and m and m!=0) else "—"})
+        if stat_rows: st.dataframe(pd.DataFrame(stat_rows), hide_index=True, use_container_width=True)
+
+        if HAS_SCIPY:
+            anova_rows=[]
+            for form in formulations:
+                sub = ag_df[(ag_df["Formulation"]==form)&(ag_df["Condition"]==stat_cond)]
+                groups=[]
+                for day in avail_days:
+                    sd_sub = sub[sub["Days"]==day]
+                    if sd_sub.empty or stat_prop not in sd_sub.columns: continue
+                    m_, s_, n_ = sd_sub[stat_prop].values[0], sd_sub.get(SD_COLS.get(stat_prop,""), pd.Series([0])).values[0], int(sd_sub.get("n",pd.Series([5])).values[0])
+                    if pd.isna(m_) or pd.isna(s_) or n_<2: continue
+                    np.random.seed(42); groups.append(np.random.normal(m_, max(s_,1e-6), n_))
+                if len(groups) >= 3:
+                    try:
+                        f_stat, p_val = f_oneway(*groups)
+                        anova_rows.append({"Formulation":form,"F-statistic":round(f_stat,3), "p-value":round(p_val,4),"Significant?": "✅ Yes (p<0.05)" if p_val<0.05 else "❌ No (p≥0.05)"})
+                    except Exception: pass
+            if anova_rows: st.dataframe(pd.DataFrame(anova_rows),hide_index=True,use_container_width=True)
+            else: st.info("Insufficient groups for ANOVA (need ≥ 3 time points with n ≥ 2).")
+
+        dsi_rows=[]
+        for form in formulations:
+            for cond in conditions:
+                dsi = compute_dsi(ag_df, form, cond)
+                dsi_rows.append({"Formulation":form,"Condition":cond, "DSI (%)":f"{dsi:.1f}" if not np.isnan(dsi) else "—", "Assessment":("🟢 Excellent" if dsi>=95 else "🟡 Moderate" if dsi>=85 else "🟠 Significant" if dsi>=75 else "🔴 Severe")})
+        if dsi_rows: st.dataframe(pd.DataFrame(dsi_rows),hide_index=True,use_container_width=True)
+
+    # FIXED: Fully restored Tab 7 (Arrhenius Analysis)
+    with ag_tabs[7]:
+        section_hdr("Arrhenius Activation Energy Estimation","🌡️","#3a0000")
+        if not use_arrhenius:
+            st.info("Enable **Arrhenius Analysis** in the sidebar to use this tab.")
+        else:
+            try: arr_temps = [float(t.strip()) for t in arr_temps_str.split(",") if t.strip()]
+            except ValueError: st.error("Invalid temperature input."); arr_temps=[]
+
+            ov_cs = [c for c in conditions if "oven" in c.lower()]
+            if len(arr_temps) < 2: st.warning("Enter at least 2 oven temperatures separated by commas.")
+            elif len(ov_cs) < len(arr_temps): st.warning(f"You specified {len(arr_temps)} temperatures but found only {len(ov_cs)} oven conditions.")
+            else:
+                arr_prop = st.selectbox("Property for Arrhenius", avail_props, format_func=lambda k: f"{AGEING_PROP_LABELS[k]} ({AGEING_PROP_UNITS[k]})", key="ap")
+                arr_model= st.selectbox("Kinetic Model", ["First-order","Power-law","Linear"], key="am")
+                arr_form = st.selectbox("Formulation",formulations,key="af")
+                R_gas = 8.314e-3  # kJ/(mol·K)
+                arr_rows = []
+                for temp_C, cond in zip(arr_temps, ov_cs[:len(arr_temps)]):
+                    days_,ret_ = get_retention(ag_df, arr_form, cond, arr_prop)
+                    valid=[(d,r) for d,r in zip(days_,ret_) if not np.isnan(r)]
+                    if len(valid)<3: continue
+                    vd,vr=zip(*valid)
+                    fits=fit_degradation_models(list(vd),list(vr))
+                    if not fits or arr_model not in fits: continue
+                    mres=fits[arr_model]
+                    k_val = list(mres["params"].values())[0]
+                    if isinstance(k_val,float) and k_val>0:
+                        T_K = temp_C + 273.15
+                        arr_rows.append({"Temp (°C)":temp_C,"T (K)":T_K, "1/T (K⁻¹)":1/T_K,"k":k_val,"ln(k)":np.log(k_val), "Condition":cond})
+
+                if len(arr_rows) >= 2:
+                    arr_df = pd.DataFrame(arr_rows); x_arr = arr_df["1/T (K⁻¹)"].values; y_arr = arr_df["ln(k)"].values
+                    try:
+                        c_arr = np.polyfit(x_arr, y_arr, 1)
+                        Ea = -c_arr[0] * R_gas
+                        ac1,ac2,ac3 = st.columns(3)
+                        ac1.metric("Activation Energy Eₐ (kJ/mol)", f"{Ea:.1f}"); ac2.metric("Pre-exponential A", f"{np.exp(c_arr[1]):.2e}"); ac3.metric("Arrhenius R²", f"{_r2(y_arr, np.polyval(c_arr,x_arr)):.4f}")
+
+                        fig_arr=go.Figure()
+                        fig_arr.add_trace(go.Scatter(x=x_arr,y=y_arr,mode='markers', marker=dict(color='#002244',size=12,symbol='circle'),name="Data"))
+                        x_fit = np.linspace(x_arr.min()*0.995, x_arr.max()*1.005, 60)
+                        fig_arr.add_trace(go.Scatter(x=x_fit,y=np.polyval(c_arr, x_fit),mode='lines', line=dict(color='#c9a84c',width=2.5), name=f"Eₐ={Ea:.1f} kJ/mol"))
+                        fig_arr.update_layout(plot_bgcolor='#fff',paper_bgcolor='#fff',height=440, xaxis=dict(title="<b>1/T (K⁻¹)</b>",**AXIS), yaxis=dict(title="<b>ln(k)</b>",**AXIS))
+                        st.plotly_chart(fig_arr,use_container_width=True,config=JCFG)
+                    except Exception as e: st.error(f"Arrhenius fit failed: {e}")
+
+    # FIXED: Fully restored Tab 8 (Comprehensive Ageing Export)
     with ag_tabs[8]:
         section_hdr("Ageing Report Export","💾","#002244")
         st.markdown("**📊 Full Ageing Excel Report**")
         ag_xl = io.BytesIO()
-        with pd.ExcelWriter(ag_xl, engine='xlsxwriter') as w:
-            ag_df.to_excel(w, sheet_name='Raw_Ageing_Data', index=False)
-            ws0=w.sheets['Raw_Ageing_Data']
-            for i,col in enumerate(ag_df.columns): ws0.write(0,i,str(col), w.book.add_format({'bold':True,'bg_color':'#002244','font_color':'#f0f4fb','border':1,'align':'center'}))
-        st.download_button("📥 Download Ageing Report",ag_xl.getvalue(), f"Ageing_Report.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
+        try:
+            with pd.ExcelWriter(ag_xl, engine='xlsxwriter') as w:
+                wb_xl = w.book
+                hdr_fmt = wb_xl.add_format({'bold':True,'bg_color':'#002244','font_color':'#f0f4fb','border':1,'align':'center'})
+                
+                # Raw data
+                ag_df.to_excel(w, sheet_name='Raw_Ageing_Data', index=False)
+                ws0=w.sheets['Raw_Ageing_Data']
+                for i,col in enumerate(ag_df.columns): ws0.write(0,i,str(col),hdr_fmt)
+
+                # Retention matrix per property
+                for prop_k in avail_props:
+                    ret_mat = []
+                    for form in formulations:
+                        for cond in conditions:
+                            days_,ret_=get_retention(ag_df,form,cond,prop_k)
+                            row_r={"Formulation":form,"Condition":cond}
+                            for d,r in zip(days_,ret_): row_r[f"Day {int(d)}"]=round(r,1) if not np.isnan(r) else ""
+                            row_r["AUC_Score"]=compute_auc_retention([d for d,r in zip(days_,ret_) if not np.isnan(r)], [r for r in ret_ if not np.isnan(r)])
+                            ret_mat.append(row_r)
+                    if ret_mat: pd.DataFrame(ret_mat).to_excel(w,sheet_name=f"Ret_{AGEING_PROP_LABELS[prop_k][:12].replace(' ','_')}",index=False)
+
+                # Kinetics
+                kin_all=[]
+                for prop_k in avail_props:
+                    for form in formulations:
+                        for cond in conditions:
+                            days_,ret_=get_retention(ag_df,form,cond,prop_k)
+                            valid=[(d,r) for d,r in zip(days_,ret_) if not np.isnan(r)]
+                            if len(valid)<3: continue
+                            fits=fit_degradation_models([v[0] for v in valid],[v[1] for v in valid])
+                            if not fits: continue
+                            for mname,mres in fits.items():
+                                r={"Property":AGEING_PROP_LABELS[prop_k],"Formulation":form, "Condition":cond,"Model":mname,"R²":mres["r2"], "Equation":mres["eq"]}
+                                r.update(mres["params"])
+                                sl_fn=mres.get("service_life_fn")
+                                r[f"Service_Life@{ag_failure_thresh}%"]=round(sl_fn(ag_failure_thresh),1) if sl_fn and np.isfinite(sl_fn(ag_failure_thresh)) else ">365"
+                                kin_all.append(r)
+                if kin_all: pd.DataFrame(kin_all).to_excel(w,sheet_name='Kinetics',index=False)
+
+                # DSI
+                dsi_all=[{"Formulation":f,"Condition":c,"DSI (%)":compute_dsi(ag_df,f,c)} for f in formulations for c in conditions]
+                pd.DataFrame(dsi_all).to_excel(w,sheet_name='DSI',index=False)
+
+            st.download_button("📥 Download Comprehensive Ageing Report",ag_xl.getvalue(), f"Ageing_Report.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
+        except Exception as e:
+            st.error(f"Export error: {e}")
