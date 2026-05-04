@@ -94,6 +94,18 @@ input[type="number"] { -moz-appearance:textfield; }
 [data-testid="stFileUploadDropzone"] { background:var(--white) !important; border:1.5px dashed var(--border) !important; border-radius:3px !important; }
 [data-testid="stFileUploadDropzone"]:hover { border-color:var(--gold) !important; }
 
+/* ── Dropdown Visibility Fix ── */
+div[data-baseweb="popover"] > div, ul[data-baseweb="menu"] {
+    background-color: var(--white) !important;
+}
+ul[data-baseweb="menu"] li {
+    color: var(--text) !important;
+    background-color: transparent !important;
+}
+ul[data-baseweb="menu"] li:hover {
+    background-color: var(--off) !important;
+}
+
 /* ── Buttons ── */
 .stButton>button {
     background:var(--off) !important; color:var(--navy2) !important;
@@ -885,7 +897,7 @@ if page == "🔬  Tensile Analysis":
             def_f = inst_stress or (cols[1] if len(cols)>1 else cols[0])
             
             # Smarter guessing for Displacement/Strain (X-axis)
-            disp_kws = ['strain', 'disp', 'ext', 'mm', 'elongation', '%', 'pos']
+            disp_kws = ['strain', 'disp', 'ext', 'mm', 'elongation', '%', 'pos', 'deformation']
             inst_disp = next((c for c in cols if any(k in c.lower() for k in disp_kws)), None)
             
             if "Digitized Strain" in cols:
@@ -966,10 +978,11 @@ if page == "🔬  Tensile Analysis":
                     "Yield Strain [%]": r["y_strain"], "UTS [MPa]": r["uts"],
                     "Stress at Break [MPa]": r["stress_break"],
                     "Elongation at Break [%]": r["strain_break"],
+                    "Work Done [J]": round(work_j,5),
                     "Toughness [MJ/m³]": r["toughness"], "Resilience [MJ/m³]": r["resilience"],
                     "Ductility Index": r["ductility_idx"],
                     "Hollomon n": r["h_n"], "Hollomon K [MPa]": r["h_K"],
-                    "Hollomon R²": r["h_r2"], "Work Done [J]": round(work_j,5),
+                    "Hollomon R²": r["h_r2"], 
                 })
 
         if not all_results:
@@ -1217,18 +1230,70 @@ if page == "🔬  Tensile Analysis":
                     with pd.ExcelWriter(xl_buf,engine='xlsxwriter') as w:
                         res_df.to_excel(w,sheet_name='Results',index=False)
                         stats_df.to_excel(w,sheet_name='Batch_Statistics')
+                        
+                        # 1. Raw Curves
                         raw_fs=[]
                         for name,r in plot_data.items():
                             raw_fs.append(pd.DataFrame({
                                 f"{name}_Strain(%)":r["strain"],f"{name}_Stress(MPa)":r["stress"],
                                 f"{name}_TrueStrain":r["true_strain"],f"{name}_TrueStress(MPa)":r["true_stress"]}))
                         if raw_fs: pd.concat(raw_fs,axis=1).to_excel(w,sheet_name='Raw_Curves',index=False)
+                        
+                        # 2. Hollomon
                         hrows2=[{"Sample":rr["Sample"],"n":rr["Hollomon n"],"K(MPa)":rr["Hollomon K [MPa]"],"R²":rr["Hollomon R²"]} for rr in all_results]
                         pd.DataFrame(hrows2).to_excel(w,sheet_name='Hollomon',index=False)
-                        ps=w.book.add_worksheet('Journal_Plot')
+                        
+                        # 3. Additional Plot Data
+                        if 'sec_rows' in locals():
+                            pd.DataFrame(sec_rows).to_excel(w, sheet_name='Secant_Data', index=False)
+                        if 'wb_data' in locals() and wb_data:
+                            pd.DataFrame({"ln(UTS)": wb_data["x"], "ln(ln(1/(1-Pf)))": wb_data["y"]}).to_excel(w, sheet_name='Weibull_Data', index=False)
+                        if 'mean_curve' in locals() and mean_curve:
+                            pd.DataFrame({"Strain(%)": mean_curve["strain"], "Mean_Stress(MPa)": mean_curve["mean"], 
+                                          "Upper_SD": mean_curve["upper"], "Lower_SD": mean_curve["lower"]}).to_excel(w, sheet_name='Mean_Curve_Data', index=False)
+
+                        # 4. Insert Journal Plot
+                        ps=w.book.add_worksheet('Plot_Journal')
                         ps.write('A1','Solomon Tensile Master Pro 4.0')
                         ie=io.BytesIO(); journal_fig.savefig(ie,format='png',dpi=300,bbox_inches='tight'); ie.seek(0)
                         ps.insert_image('A3','p.png',{'image_data':ie})
+                        
+                        # 5. Insert Static Versions of Interactive Plots
+                        plt.rcParams.update({"font.family":"serif","font.size":10})
+                        
+                        # True Stress-Strain Image
+                        fig_t_exp, ax_t = plt.subplots(figsize=(7,5))
+                        for name, r in plot_data.items():
+                            ax_t.plot(r["true_strain"]*100, r["true_stress"], label=name, color=sample_colors.get(name,"#000"))
+                        ax_t.set_xlabel("True Strain (%)"); ax_t.set_ylabel("True Stress (MPa)"); ax_t.legend()
+                        fig_t_exp.tight_layout()
+                        buf_t = io.BytesIO(); fig_t_exp.savefig(buf_t, format='png', dpi=150); buf_t.seek(0)
+                        w.book.add_worksheet('Plot_TrueSS').insert_image('A1', 't.png', {'image_data': buf_t})
+                        plt.close(fig_t_exp)
+                        
+                        # Mean Curve Image
+                        if 'mean_curve' in locals() and mean_curve:
+                            fig_m_exp, ax_m = plt.subplots(figsize=(7,5))
+                            ax_m.fill_between(mean_curve["strain"], mean_curve["lower"], mean_curve["upper"], alpha=0.2, color='#555')
+                            for name, r in plot_data.items(): ax_m.plot(r["strain"], r["stress"], lw=1, alpha=0.4, color=sample_colors.get(name,"#aaa"))
+                            ax_m.plot(mean_curve["strain"], mean_curve["mean"], 'k--', lw=2, label="Mean")
+                            ax_m.set_xlabel("Strain (%)"); ax_m.set_ylabel("Stress (MPa)"); ax_m.legend()
+                            fig_m_exp.tight_layout()
+                            buf_m = io.BytesIO(); fig_m_exp.savefig(buf_m, format='png', dpi=150); buf_m.seek(0)
+                            w.book.add_worksheet('Plot_MeanCurve').insert_image('A1', 'm.png', {'image_data': buf_m})
+                            plt.close(fig_m_exp)
+                            
+                        # Weibull Image
+                        if 'wb_data' in locals() and wb_data:
+                            fig_w_exp, ax_w = plt.subplots(figsize=(7,5))
+                            ax_w.plot(wb_data["x"], wb_data["y"], 'o', color='#002244', ms=8)
+                            ax_w.plot(wb_data["fx"], wb_data["fy"], '-', color='#c9a84c', lw=2, label=f"m={wb_data['m']}")
+                            ax_w.set_xlabel("ln(UTS)"); ax_w.set_ylabel("ln(ln(1/(1-Pf)))"); ax_w.legend()
+                            fig_w_exp.tight_layout()
+                            buf_w = io.BytesIO(); fig_w_exp.savefig(buf_w, format='png', dpi=150); buf_w.seek(0)
+                            w.book.add_worksheet('Plot_Weibull').insert_image('A1', 'w.png', {'image_data': buf_w})
+                            plt.close(fig_w_exp)
+
                     st.download_button("📥 Download Excel Report",xl_buf.getvalue(),
                         "Tensile_Report_v4.xlsx",
                         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
