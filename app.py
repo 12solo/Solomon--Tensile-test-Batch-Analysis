@@ -371,9 +371,11 @@ def compute_ci(mean, sd, n, alpha=0.05):
     return float(t_dist.ppf(1-alpha/2, df=n-1) * sd / np.sqrt(n)) if HAS_SCIPY else float(1.96 * sd / np.sqrt(n))
 
 def build_ageing_template():
-    forms, conds, days, np.random.seed(42) = ["Pure PBAT", "PBAT/PLA 80:20", "PBAT/PLA+5%NFC"], ["Oven", "UV-Xenon"], [0, 7, 14, 21, 28], None
+    # FIXED: Separate the function call from the variable assignment
+    np.random.seed(42)
+    forms, conds, days = ["Pure PBAT", "PBAT/PLA 80:20", "PBAT/PLA+5%NFC"], ["Oven", "UV-Xenon"], [0, 7, 14, 21, 28]
     rows = []
-    base = {"Pure PBAT": dict(E=520, UTS=22, Yield=12, Elong=680, Tough=0.12, Resil=0.0014), "PBAT/PLA 80:20": dict(E=780, UTS=32, Yield=18, Elong=420, Tough=0.09, Resil=0.0021), "PBAT/PLA+5%NFC": dict(E=950, UTS=38, Yield=22, Elong=310, Tough=0.08, Resil=0.0026)}
+    base = {"Pure PBAT": dict(E=520, UTS=22, Yield=12, Elong=680, Tough=0.12, Resil=0.0014), "PBAT/PLA 80:20": dict(E=780, UTS=32, Yield=18, Elong=420, Tough=0.09, Resil=0.0021), "PBAT/PLA+5%NFC": dict(E=950, UTS=38, Yield=22, Elong=310, Tough=0.08, Resil=0.0026)} Elong=310, Tough=0.08, Resil=0.0026)}
     decay = {"Oven": dict(E=0.004, UTS=0.006, Yield=0.005, Elong=-0.003, Tough=0.007, Resil=0.005), "UV-Xenon": dict(E=0.006, UTS=0.010, Yield=0.008, Elong=-0.004, Tough=0.011, Resil=0.008)}
     for f in forms:
         for c in conds:
