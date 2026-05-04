@@ -291,17 +291,24 @@ def render_sidebar_brand():
 def _load_bytes(file_bytes: bytes, file_name: str):
     try:
         ext = file_name.rsplit('.', 1)[-1].lower()
-        if ext == 'xlsx':
+        if ext in ['xlsx', 'xls']:
             return pd.read_excel(io.BytesIO(file_bytes), engine='openpyxl')
         content = file_bytes.decode("utf-8", errors="ignore")
         lines = content.splitlines()
-        start = 0
+        start_row = 0
+        
+        # Look for the first line that has numbers to identify data start
         for i, ln in enumerate(lines):
             if len(re.findall(r"[-+]?\d*\.?\d+", ln)) >= 2:
-                start = i; break
-        sl = lines[start] if lines else ""
+                start_row = i
+                break
+                
+        # Ensure we capture the header row (the line right above the data)
+        header_row = max(0, start_row - 1) if start_row > 0 else 0
+        sl = lines[header_row] if lines else ""
         sep = '\t' if '\t' in sl else (',' if ',' in sl else r'\s+')
-        df = pd.read_csv(io.StringIO("\n".join(lines[start:])),
+        
+        df = pd.read_csv(io.StringIO("\n".join(lines[header_row:])),
                          sep=sep, engine='python', on_bad_lines='skip')
         df.columns = [str(c).strip() for c in df.columns]
         return df
@@ -642,12 +649,11 @@ def template_to_excel():
             'border':1,'align':'center','text_wrap':True,'valign':'vcenter'
         })
         for i, col in enumerate(df.columns):
-            # FIXED: Safely handle empty df max() calls and force col names to string
             max_val_len = df[col].astype(str).str.len().max()
             max_val_len = 0 if pd.isna(max_val_len) else max_val_len
             cw = max(len(str(col)), max_val_len) + 3
             ws.set_column(i, i, cw)
-            ws.write(0, i, str(col), hdr_fmt) # Output strictly as string
+            ws.write(0, i, str(col), hdr_fmt)
         ws.freeze_panes(1, 4)
         notes_ws = wb.add_worksheet('Instructions')
         instructions = [
@@ -684,7 +690,6 @@ def load_ageing_data(file):
             df = pd.read_excel(file, engine='openpyxl')
         else:
             df = pd.read_csv(file)
-        # FIXED: Cast column names to strings before using strip()
         df.columns = [str(c).strip() for c in df.columns]
         required = ["Formulation","Condition","Days"]
         missing = [c for c in required if c not in df.columns]
@@ -872,11 +877,44 @@ if page == "🔬  Tensile Analysis":
         all_results=[]; plot_data={}; sample_colors={}
         section_hdr("Sample Configuration & Modulus Validation","⚙️")
 
-        with st.expander("⚡ Bulk Apply to All Samples", expanded=False):
+        # ── Global Column Detection (from first file) ──
+        first_df = smart_load(uploaded_files[0])
+        global_cols = first_df.columns.tolist() if first_df is not None else []
+        
+        # Aggressive Y-Axis Detection (Force/Stress)
+        force_kws = ['stress', 'sforzo', 'mpa', 'sigma', 'force', 'load', 'n', 'lbf', 'kgf', 'str']
+        def_f = next((c for c in global_cols if any(k in str(c).lower() for k in force_kws)), None)
+        
+        # Aggressive X-Axis Detection (Strain/Displacement)
+        disp_kws = ['strain', 'disp', 'ext', 'mm', 'elongation', '%', 'pos', 'deformation', 'def']
+        def_d = next((c for c in global_cols if any(k in str(c).lower() for k in disp_kws)), None)
+        
+        # Bulletproof Fallbacks (Actively avoid 'Time' or 'Sec')
+        if not def_f or not def_d:
+            non_time_cols = [c for c in global_cols if 'time' not in str(c).lower() and 'sec' not in str(c).lower()]
+            if not def_f: def_f = non_time_cols[-1] if len(non_time_cols) > 0 else (global_cols[-1] if global_cols else None)
+            if not def_d: def_d = non_time_cols[0] if len(non_time_cols) > 0 else (global_cols[0] if global_cols else None)
+
+        # Override for Image Digitizer
+        if "Digitized Strain" in global_cols:
+            def_d = "Digitized Strain"
+            def_f = "Digitized Stress"
+            
+        f_idx = global_cols.index(def_f) if def_f in global_cols else 0
+        d_idx = global_cols.index(def_d) if def_d in global_cols else (1 if len(global_cols) > 1 else 0)
+
+        with st.expander("⚡ Global Settings & Bulk Apply", expanded=True):
+            st.markdown("**1. Global Column Selection**")
+            gc1, gc2 = st.columns(2)
+            global_f_col = gc1.selectbox("Global Force/Stress Column", global_cols, index=f_idx, key="glob_f")
+            global_d_col = gc2.selectbox("Global Disp/Strain Column", global_cols, index=d_idx, key="glob_d")
+
+            st.markdown("**2. Modulus & Yield Settings**")
             bc1,bc2,bc3,bc4 = st.columns([2,2,2,1])
             bulk_r  = bc1.slider("Global Fit Range (%)",0.0,20.0,(0.2,1.0),key="br")
             bulk_m  = bc2.selectbox("Global Yield Method",["0.2% Offset Method","Departure from Linearity"],key="bm")
             bulk_v  = bc3.slider("Global Offset (%)",0.01,5.0,0.2,0.01,key="bv")
+            st.caption("Adjusting sliders updates graphs instantly. Hit 'Apply All' to sync unlinked files.")
             if bc4.button("Apply All",type="primary"):
                 for f in uploaded_files:
                     if f:
@@ -891,51 +929,29 @@ if page == "🔬  Tensile Analysis":
             if df_raw is None or df_raw.empty: continue
             cols = df_raw.columns.tolist()
             
-            # 1. Aggressive Y-Axis Detection (Force/Stress)
-            force_kws = ['stress', 'sforzo', 'mpa', 'sigma', 'force', 'load', 'n', 'lbf', 'kgf', 'str']
-            def_f = next((c for c in cols if any(k in c.lower() for k in force_kws)), None)
+            f_col = global_f_col
+            d_col = global_d_col
             
-            # 2. Aggressive X-Axis Detection (Strain/Displacement)
-            disp_kws = ['strain', 'disp', 'ext', 'mm', 'elongation', '%', 'pos', 'deformation', 'def']
-            def_d = next((c for c in cols if any(k in c.lower() for k in disp_kws)), None)
-            
-            # 3. Bulletproof Fallbacks (Actively avoid 'Time' or 'Sec')
-            if not def_f or not def_d:
-                non_time_cols = [c for c in cols if 'time' not in c.lower() and 'sec' not in c.lower()]
-                
-                # If it couldn't find Force, guess the last column
-                if not def_f:
-                    def_f = non_time_cols[-1] if len(non_time_cols) > 0 else cols[-1]
-                
-                # If it couldn't find Displacement, guess the first non-time column
-                if not def_d:
-                    def_d = non_time_cols[0] if len(non_time_cols) > 0 else cols[0]
-
-            # Override for Image Digitizer
-            if "Digitized Strain" in cols:
-                def_d = "Digitized Strain"
-                def_f = "Digitized Stress"
+            if f_col not in cols or d_col not in cols:
+                st.error(f"File '{file.name}' missing columns '{f_col}' or '{d_col}'. Skipping.")
+                continue
 
             with st.expander(f"📄 {clean_label(file.name)}", expanded=False):
-                r1 = st.columns([2,2,2,1])
+                r1 = st.columns([3, 1])
                 custom_name = r1[0].text_input("Display Name",value=clean_label(file.name),key=f"nm_{file.name}")
-                f_col = r1[1].selectbox("Force/Stress Column",cols,
-                    index=cols.index(def_f) if def_f in cols else 0,key=f"f_{file.name}")
-                d_col = r1[2].selectbox("Displacement/Strain Column",cols,
-                    index=cols.index(def_d) if def_d in cols else min(1,len(cols)-1),key=f"d_{file.name}")
-                chosen_color = r1[3].color_picker("",value=PALETTE[idx%len(PALETTE)],key=f"col_{file.name}")
+                chosen_color = r1[1].color_picker("Color",value=PALETTE[idx%len(PALETTE)],key=f"col_{file.name}")
                 sample_colors[custom_name] = chosen_color
 
                 r2 = st.columns([2,2,2])
                 fit_range    = r2[0].slider("Modulus Fit Range (%)",0.0,20.0,
-                    st.session_state.get(f"range_{file.name}",(0.2,1.0)),key=f"range_{file.name}")
+                    st.session_state.get(f"range_{file.name}", bulk_r),key=f"range_{file.name}_sl")
                 yield_method = r2[1].selectbox("Yield Method",
                     ["0.2% Offset Method","Departure from Linearity"],
                     index=["0.2% Offset Method","Departure from Linearity"].index(
-                        st.session_state.get(f"meth_{file.name}","0.2% Offset Method")),
-                    key=f"meth_{file.name}")
+                        st.session_state.get(f"meth_{file.name}", bulk_m)),
+                    key=f"meth_{file.name}_sl")
                 yield_val = r2[2].slider("Offset/Sensitivity (%)",0.01,5.0,
-                    st.session_state.get(f"val_{file.name}",0.2),0.01,key=f"val_{file.name}")
+                    st.session_state.get(f"val_{file.name}", bulk_v),0.01,key=f"val_{file.name}_sl")
 
                 df_c = df_raw[[f_col,d_col]].apply(pd.to_numeric,errors='coerce').dropna()
                 if df_c.empty: st.error("No numeric data."); continue
@@ -943,7 +959,7 @@ if page == "🔬  Tensile Analysis":
                     stress_raw_arr = df_c[f_col].values; strain_raw_arr = df_c[d_col].values
                 else:
                     disp_mm = df_c[d_col].values * u_scale
-                    is_stress = def_f and f_col==def_f and any(k in f_col.lower() for k in ['stress','mpa','sigma','sforzo'])
+                    is_stress = any(k in str(f_col).lower() for k in ['stress','mpa','sigma','sforzo'])
                     stress_raw_arr = df_c[f_col].values if is_stress else df_c[f_col].values/area
                     strain_raw_arr = (disp_mm/gauge_length)*100.0
                 if smooth_win > 1:
@@ -2185,7 +2201,6 @@ else:
                     # Raw data
                     ag_df.to_excel(w, sheet_name='Raw_Ageing_Data', index=False)
                     ws0=w.sheets['Raw_Ageing_Data']
-                    # FIXED: Explicitly cast column names to string
                     for i,col in enumerate(ag_df.columns): ws0.write(0,i,str(col),hdr_fmt)
 
                     # Retention matrix per property
@@ -2229,7 +2244,7 @@ else:
                     pd.DataFrame(dsi_all).to_excel(w,sheet_name='DSI',index=False)
 
                 st.download_button("📥 Download Ageing Report",ag_xl.getvalue(),
-                    f"Ageing_Report_{project_name if 'project_name' in dir() else 'Study'}.xlsx",
+                    f"Ageing_Report.xlsx",
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     use_container_width=True)
             except Exception as e:
