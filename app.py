@@ -1,8 +1,8 @@
 """
-Solomon Tensile Master Pro v4.2
+Solomon Tensile Master Pro v4.3
 ─────────────────────────────────────────────────────────────────────────────
 Integrated platform:
-  Page 1 — Tensile Analysis      (Rock-solid parsing + Full Excel Plots)
+  Page 1 — Tensile Analysis      (Fixed Data Scaling + 50% Yield Slider)
   Page 2 — Ageing Trend Analysis (Oven & UV-Xenon degradation science)
 ─────────────────────────────────────────────────────────────────────────────
 """
@@ -37,7 +37,7 @@ except ImportError:
 # PAGE CONFIG
 # ═══════════════════════════════════════════════════════════════════════════
 st.set_page_config(
-    page_title="Tensile Master Pro 4.2 | Solomon Scientific",
+    page_title="Tensile Master Pro 4.3 | Solomon Scientific",
     page_icon="LOGO.png",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -167,7 +167,7 @@ def render_header(page_label=""):
     st.markdown(f"""
     <div style="display:flex;align-items:center;justify-content:space-between;padding:1.2rem 2rem;background:#002244;border-radius:4px;margin-bottom:1.25rem;">
       <div style="display:flex;align-items:center;gap:1.2rem;">{icon}
-        <div><div style="font-family:'Playfair Display',Georgia,serif;font-size:1.6rem;font-weight:700;color:#f0f4fb;line-height:1.1;">Solomon Tensile Master Pro<span style="color:#c9a84c;"> 4.2</span>{badge}</div>
+        <div><div style="font-family:'Playfair Display',Georgia,serif;font-size:1.6rem;font-weight:700;color:#f0f4fb;line-height:1.1;">Solomon Tensile Master Pro<span style="color:#c9a84c;"> 4.3</span>{badge}</div>
         <div style="font-family:'IBM Plex Sans',sans-serif;font-size:0.66rem;color:#a8b4c8;letter-spacing:0.18em;text-transform:uppercase;margin-top:3px;">Advanced Mechanical &amp; Ageing Analysis Framework &nbsp;·&nbsp; Solomon Scientific</div></div>
       </div>
     </div>""", unsafe_allow_html=True)
@@ -178,7 +178,7 @@ def render_sidebar_brand():
     st.markdown(f"""
     <div style="padding:0.75rem 0 0.3rem;text-align:center;">{icon}
       <div style="font-family:'IBM Plex Sans',sans-serif;font-size:0.58rem;color:#9c7a32;letter-spacing:0.2em;text-transform:uppercase;font-weight:700;">Solomon Scientific</div>
-      <div style="font-family:'Playfair Display',Georgia,serif;font-size:0.9rem;font-weight:700;color:#002244;">Master Pro <span style="color:#c9a84c;">4.2</span></div>
+      <div style="font-family:'Playfair Display',Georgia,serif;font-size:0.9rem;font-weight:700;color:#002244;">Master Pro <span style="color:#c9a84c;">4.3</span></div>
     </div>""", unsafe_allow_html=True)
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -441,7 +441,6 @@ with st.sidebar:
         legend_pos   = st.selectbox("Legend",["lower right","upper right","upper left","lower left","best","outside"])
         show_mean    = st.checkbox("Mean ± SD Band", False)
         show_E_lines = st.checkbox("Modulus Fit Lines", True)
-        show_yield   = st.checkbox("Yield Markers", True)
         auto_scale   = st.checkbox("Auto-Scale Axes", True)
         if not auto_scale:
             cust_xmax = st.number_input("X max (%)", value=10.0)
@@ -462,7 +461,7 @@ with st.sidebar:
         if use_arrhenius:
             arr_temps_str = st.text_input("Oven Temperatures (°C, comma-separated)", "60, 70, 80")
 
-    st.markdown("""<div style="padding:0.6rem 0 0.3rem;text-align:center;font-family:'IBM Plex Sans',sans-serif;font-size:0.6rem;color:#7f8c8d;letter-spacing:0.1em;">Research & Academic Use Only · v4.2</div>""", unsafe_allow_html=True)
+    st.markdown("""<div style="padding:0.6rem 0 0.3rem;text-align:center;font-family:'IBM Plex Sans',sans-serif;font-size:0.6rem;color:#7f8c8d;letter-spacing:0.1em;">Research & Academic Use Only · v4.3</div>""", unsafe_allow_html=True)
 
 # ═══════════════════════════════════════════════════════════════════════════
 # PAGE 1 — TENSILE ANALYSIS
@@ -534,9 +533,8 @@ if page == "🔬 Tensile Analysis":
             st.markdown("**2. Modulus & Yield Settings**")
             bc1,bc2,bc3,bc4 = st.columns([2,2,2,1])
             bulk_r  = bc1.slider("Global Fit Range (%)",0.0,20.0,(0.2,1.0),key="br")
-            # FIXED: Made Yield Method a select_slider per request
             bulk_m  = bc2.select_slider("Global Yield Method", options=["0.2% Offset Method","Departure from Linearity"], value="0.2% Offset Method", key="bm")
-            bulk_v  = bc3.slider("Global Offset (%)",0.01,5.0,0.2,0.01,key="bv")
+            bulk_v  = bc3.slider("Global Offset/Sensitivity (%)",0.01,50.0,0.2,0.01,key="bv")
             st.caption("Adjusting sliders updates graphs instantly. Hit 'Apply All' to sync unlinked files.")
             if bc4.button("Apply All", type="primary"):
                 for f in uploaded_files:
@@ -567,13 +565,10 @@ if page == "🔬 Tensile Analysis":
 
                 r2 = st.columns([2,2,2])
                 fit_range = r2[0].slider("Modulus Fit Range (%)",0.0,20.0, st.session_state.get(f"range_{file.name}_sl", bulk_r), key=f"range_{file.name}_sl")
-                
-                # Dynamic failsafe for the slider state
                 current_ym_val = st.session_state.get(f"meth_{file.name}_sl", bulk_m)
                 if current_ym_val not in ["0.2% Offset Method","Departure from Linearity"]: current_ym_val = "0.2% Offset Method"
                 yield_method = r2[1].select_slider("Yield Method", options=["0.2% Offset Method","Departure from Linearity"], value=current_ym_val, key=f"meth_{file.name}_sl")
-                
-                yield_val = r2[2].slider("Offset/Sensitivity (%)",0.01,5.0, st.session_state.get(f"val_{file.name}_sl", bulk_v), 0.01, key=f"val_{file.name}_sl")
+                yield_val = r2[2].slider("Offset/Sensitivity (%)",0.01,50.0, st.session_state.get(f"val_{file.name}_sl", bulk_v), 0.01, key=f"val_{file.name}_sl")
 
                 df_c = df_raw[[f_col,d_col]].apply(pd.to_numeric,errors='coerce').dropna()
                 if df_c.empty: st.error("No numeric data."); continue
@@ -581,10 +576,20 @@ if page == "🔬 Tensile Analysis":
                 if "Digitized" in str(file.name):
                     stress_raw_arr = df_c[f_col].values; strain_raw_arr = df_c[d_col].values
                 else:
-                    disp_mm = df_c[d_col].values * u_scale
-                    is_stress = any(k in str(f_col).lower() for k in ['stress','mpa','sigma','sforzo'])
-                    stress_raw_arr = df_c[f_col].values if is_stress else df_c[f_col].values/area
-                    strain_raw_arr = (disp_mm/gauge_length)*100.0
+                    # SMART BYPASS: If the column is already strain or stress, bypass geometry conversion
+                    is_strain = any(k in str(d_col).lower() for k in ['strain', '%', 'str'])
+                    is_stress = any(k in str(f_col).lower() for k in ['stress', 'mpa', 'sigma', 'sforzo'])
+                    
+                    if is_strain:
+                        strain_raw_arr = df_c[d_col].values
+                    else:
+                        disp_mm = df_c[d_col].values * u_scale
+                        strain_raw_arr = (disp_mm / gauge_length) * 100.0
+                        
+                    if is_stress:
+                        stress_raw_arr = df_c[f_col].values
+                    else:
+                        stress_raw_arr = df_c[f_col].values / area
                     
                 if smooth_win > 1:
                     stress_raw_arr = pd.Series(stress_raw_arr).rolling(smooth_win,min_periods=1).mean().values
@@ -596,7 +601,6 @@ if page == "🔬 Tensile Analysis":
                 fig_mini = go.Figure()
                 fig_mini.add_trace(go.Scatter(x=r["strain"],y=r["stress"],mode='lines', line=dict(color=chosen_color,width=2),name="Eng."))
                 if show_E_lines: fig_mini.add_trace(go.Scatter(x=r["fit_x"],y=r["fit_y"],mode='lines', line=dict(color='#555',width=1,dash='dot'),showlegend=False,hoverinfo='skip'))
-                if show_yield and not np.isnan(r["y_stress"]): fig_mini.add_trace(go.Scatter(x=[r["y_strain"]],y=[r["y_stress"]],mode='markers', marker=dict(color='#c0392b',size=9,symbol='circle-open',line=dict(width=2)), showlegend=False))
                 fig_mini.update_layout(height=210,margin=dict(l=0,r=0,t=0,b=0), plot_bgcolor='#fff',paper_bgcolor='#fff',showlegend=False, xaxis=dict(showgrid=False,linecolor='#dde3ec',range=[0,None],tickfont=dict(size=10)), yaxis=dict(showgrid=False,linecolor='#dde3ec',range=[0,None],tickfont=dict(size=10)))
                 st.plotly_chart(fig_mini,use_container_width=True,config={'displayModeBar':False})
 
@@ -664,7 +668,6 @@ if page == "🔬 Tensile Analysis":
                     fig_m.add_trace(go.Scatter(x=r["strain"],y=r["stress"],name=name,mode='lines', line=dict(width=line_lw,color=col)))
                     if overlay_true: fig_m.add_trace(go.Scatter(x=r["true_strain"]*100,y=r["true_stress"], name=f"{name} (True)",mode='lines', line=dict(width=line_lw*0.75,color=col,dash='dash'),opacity=0.65))
                     if show_E_lines: fig_m.add_trace(go.Scatter(x=r["fit_x"],y=r["fit_y"],mode='lines', line=dict(width=1,color='#aaa',dash='dot'),showlegend=False,hoverinfo='skip'))
-                    if show_yield and not np.isnan(r["y_stress"]): fig_m.add_trace(go.Scatter(x=[r["y_strain"]],y=[r["y_stress"]],mode='markers', marker=dict(color='#c0392b',size=11,symbol='circle-open',line=dict(width=2.5)), showlegend=False,hovertemplate=f"<b>{name}</b><br>σᵧ={r['y_stress']:.2f} MPa<extra></extra>"))
                 if show_mean and mean_curve:
                     fig_m.add_trace(go.Scatter(x=np.concatenate([mean_curve["strain"],mean_curve["strain"][::-1]]), y=np.concatenate([mean_curve["upper"],mean_curve["lower"][::-1]]), fill='toself',fillcolor='rgba(0,34,68,0.10)', line=dict(width=0),name="±1 SD",hoverinfo='skip'))
                     fig_m.add_trace(go.Scatter(x=mean_curve["strain"],y=mean_curve["mean"],mode='lines', line=dict(color='#000',width=2,dash='dash'),name="Mean"))
@@ -788,7 +791,7 @@ if page == "🔬 Tensile Analysis":
                         # 1. Raw Curves (Eng & True)
                         raw_fs=[]
                         for name,r in plot_data.items():
-                            raw_fs.append(pd.DataFrame({f"{name}_Strain(%)":r["strain"],f"{name}_Stress(MPa)":r["stress"], f"{name}_TrueStrain":r["true_strain"],f"{name}_TrueStress(MPa)":r["true_stress"]}))
+                            raw_fs.append(pd.DataFrame({f"{name}_Strain(%)":r["strain"],f"{name}_Stress(MPa)":r["stress"], f"{name}_TrueStrain(abs)":r["true_strain"],f"{name}_TrueStress(MPa)":r["true_stress"]}))
                         if raw_fs: pd.concat(raw_fs,axis=1).to_excel(w,sheet_name='Raw_Curves',index=False)
                         
                         # 2. Hollomon Summary & Raw Data
@@ -877,7 +880,7 @@ if page == "🔬 Tensile Analysis":
                             w.book.add_worksheet('Plot_MeanCurve').insert_image('A1', 'p6.png', {'image_data': buf_m})
                             plt.close(fig_m_exp)
 
-                    st.download_button("📥 Download Excel Report",xl_buf.getvalue(), "Tensile_Report_v4-2.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
+                    st.download_button("📥 Download Excel Report",xl_buf.getvalue(), "Tensile_Report_v4-3.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
                 except Exception as e: st.error(f"Export error: {e}")
             with ec2:
                 st.markdown("**🖼️ 600 DPI Journal TIFF**")
