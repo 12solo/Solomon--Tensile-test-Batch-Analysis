@@ -1,8 +1,8 @@
 """
-Solomon Tensile Master Pro v4.1
+Solomon Tensile Master Pro v4.2
 ─────────────────────────────────────────────────────────────────────────────
 Integrated platform:
-  Page 1 — Tensile Analysis      (Rock-solid V2 parsing + V4 features)
+  Page 1 — Tensile Analysis      (Rock-solid parsing + Full Excel Plots)
   Page 2 — Ageing Trend Analysis (Oven & UV-Xenon degradation science)
 ─────────────────────────────────────────────────────────────────────────────
 """
@@ -37,7 +37,7 @@ except ImportError:
 # PAGE CONFIG
 # ═══════════════════════════════════════════════════════════════════════════
 st.set_page_config(
-    page_title="Tensile Master Pro 4.1 | Solomon Scientific",
+    page_title="Tensile Master Pro 4.2 | Solomon Scientific",
     page_icon="LOGO.png",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -66,20 +66,15 @@ html, body, [class*="css"] { font-family: var(--font-b); color: var(--text); }
 #MainMenu, .stDeployButton, footer { display:none !important; }
 header { background:transparent !important; box-shadow:none !important; }
 [data-testid="block-container"] { padding-top:0.75rem !important; }
-div[data-testid="InputInstructions"],
-div[data-baseweb="tooltip"],
-[data-testid="stTooltipHoverTarget"] { display:none !important; }
-[data-testid="stFileUploadDropzone"] svg,
-[data-testid="stFileUploadDropzone"] small { display:none !important; }
-input[type="number"]::-webkit-inner-spin-button,
-input[type="number"]::-webkit-outer-spin-button { -webkit-appearance:none; }
+div[data-testid="InputInstructions"], div[data-baseweb="tooltip"], [data-testid="stTooltipHoverTarget"] { display:none !important; }
+[data-testid="stFileUploadDropzone"] svg, [data-testid="stFileUploadDropzone"] small { display:none !important; }
+input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance:none; }
 input[type="number"] { -moz-appearance:textfield; }
 
 /* ── Sidebar ── */
 [data-testid="stSidebar"] { background:var(--off) !important; border-right:1px solid var(--border) !important; }
 [data-testid="stSidebar"] h1,[data-testid="stSidebar"] h2,[data-testid="stSidebar"] h3 {
-    font-family:var(--font-b) !important; font-size:0.68rem !important;
-    font-weight:700 !important; letter-spacing:0.15em !important;
+    font-family:var(--font-b) !important; font-size:0.68rem !important; font-weight:700 !important; letter-spacing:0.15em !important;
     text-transform:uppercase !important; color:var(--navy2) !important; margin:0.75rem 0 0.15rem !important;
 }
 [data-testid="stSidebar"] hr { border:none !important; border-top:1px solid var(--border) !important; margin:0.6rem 0 !important; }
@@ -87,8 +82,7 @@ input[type="number"] { -moz-appearance:textfield; }
 /* ── Inputs ── */
 [data-testid="stSidebar"] input,[data-testid="stSidebar"] textarea,[data-testid="stSidebar"] select,
 .stSelectbox>div>div,.stTextInput>div>div>input,.stNumberInput>div>div>input {
-    background:var(--white) !important; border:1px solid var(--border) !important;
-    border-radius:3px !important; color:var(--text) !important;
+    background:var(--white) !important; border:1px solid var(--border) !important; border-radius:3px !important; color:var(--text) !important;
     font-family:var(--font-m) !important; font-size:0.82rem !important;
 }
 [data-testid="stFileUploadDropzone"] { background:var(--white) !important; border:1.5px dashed var(--border) !important; border-radius:3px !important; }
@@ -101,32 +95,17 @@ ul[data-baseweb="menu"] li:hover { background-color: var(--off) !important; }
 
 /* ── Buttons ── */
 .stButton>button {
-    background:var(--off) !important; color:var(--navy2) !important;
-    border:1px solid var(--border) !important; border-radius:3px !important;
-    font-family:var(--font-b) !important; font-weight:600 !important;
-    font-size:0.75rem !important; letter-spacing:0.07em !important;
-    text-transform:uppercase !important; padding:0.45rem 0.9rem !important;
-    transition:all 0.15s !important;
+    background:var(--off) !important; color:var(--navy2) !important; border:1px solid var(--border) !important; border-radius:3px !important;
+    font-family:var(--font-b) !important; font-weight:600 !important; font-size:0.75rem !important; letter-spacing:0.07em !important;
+    text-transform:uppercase !important; padding:0.45rem 0.9rem !important; transition:all 0.15s !important;
 }
 .stButton>button:hover { background:var(--border) !important; }
-.stButton>button[kind="primary"] {
-    background:linear-gradient(135deg,var(--gold2),var(--gold)) !important;
-    color:var(--navy) !important; border:none !important;
-}
-[data-testid="stDownloadButton"]>button {
-    background:var(--off) !important; color:var(--navy2) !important;
-    border:1px solid var(--border) !important; width:100% !important;
-}
+.stButton>button[kind="primary"] { background:linear-gradient(135deg,var(--gold2),var(--gold)) !important; color:var(--navy) !important; border:none !important; }
+[data-testid="stDownloadButton"]>button { background:var(--off) !important; color:var(--navy2) !important; border:1px solid var(--border) !important; width:100% !important; }
 
 /* ── Tabs & DataFrames ── */
 [data-testid="stTabs"] [role="tablist"] { background:var(--off); border-bottom:2px solid var(--border); padding:0; gap:0; }
-[data-testid="stTabs"] [role="tab"] {
-    color:var(--muted) !important; font-family:var(--font-b) !important;
-    font-size:0.74rem !important; font-weight:600 !important;
-    letter-spacing:0.07em !important; text-transform:uppercase !important;
-    padding:0.6rem 1.0rem !important; border-bottom:2px solid transparent !important;
-    margin-bottom:-2px !important;
-}
+[data-testid="stTabs"] [role="tab"] { color:var(--muted) !important; font-family:var(--font-b) !important; font-size:0.74rem !important; font-weight:600 !important; letter-spacing:0.07em !important; text-transform:uppercase !important; padding:0.6rem 1.0rem !important; border-bottom:2px solid transparent !important; margin-bottom:-2px !important; }
 [data-testid="stTabs"] [role="tab"][aria-selected="true"] { border-bottom-color:var(--gold) !important; color:var(--navy) !important; background:var(--white) !important; }
 [data-testid="stDataFrame"] { border:1px solid var(--border) !important; border-radius:3px !important; overflow:hidden !important; }
 [data-testid="stDataFrame"] th { background:var(--off) !important; color:var(--navy2) !important; font-weight:700 !important; text-transform:uppercase !important; font-size:0.7rem !important; letter-spacing:0.06em !important; }
@@ -188,7 +167,7 @@ def render_header(page_label=""):
     st.markdown(f"""
     <div style="display:flex;align-items:center;justify-content:space-between;padding:1.2rem 2rem;background:#002244;border-radius:4px;margin-bottom:1.25rem;">
       <div style="display:flex;align-items:center;gap:1.2rem;">{icon}
-        <div><div style="font-family:'Playfair Display',Georgia,serif;font-size:1.6rem;font-weight:700;color:#f0f4fb;line-height:1.1;">Solomon Tensile Master Pro<span style="color:#c9a84c;"> 4.1</span>{badge}</div>
+        <div><div style="font-family:'Playfair Display',Georgia,serif;font-size:1.6rem;font-weight:700;color:#f0f4fb;line-height:1.1;">Solomon Tensile Master Pro<span style="color:#c9a84c;"> 4.2</span>{badge}</div>
         <div style="font-family:'IBM Plex Sans',sans-serif;font-size:0.66rem;color:#a8b4c8;letter-spacing:0.18em;text-transform:uppercase;margin-top:3px;">Advanced Mechanical &amp; Ageing Analysis Framework &nbsp;·&nbsp; Solomon Scientific</div></div>
       </div>
     </div>""", unsafe_allow_html=True)
@@ -199,11 +178,11 @@ def render_sidebar_brand():
     st.markdown(f"""
     <div style="padding:0.75rem 0 0.3rem;text-align:center;">{icon}
       <div style="font-family:'IBM Plex Sans',sans-serif;font-size:0.58rem;color:#9c7a32;letter-spacing:0.2em;text-transform:uppercase;font-weight:700;">Solomon Scientific</div>
-      <div style="font-family:'Playfair Display',Georgia,serif;font-size:0.9rem;font-weight:700;color:#002244;">Master Pro <span style="color:#c9a84c;">4.1</span></div>
+      <div style="font-family:'Playfair Display',Georgia,serif;font-size:0.9rem;font-weight:700;color:#002244;">Master Pro <span style="color:#c9a84c;">4.2</span></div>
     </div>""", unsafe_allow_html=True)
 
 # ═══════════════════════════════════════════════════════════════════════════
-# FILE LOADING ENGINE (RE-WRITTEN FOR STABILITY)
+# FILE LOADING ENGINE
 # ═══════════════════════════════════════════════════════════════════════════
 @st.cache_data(show_spinner=False)
 def _load_file_clean(file_bytes: bytes, file_name: str, skip_rows: int):
@@ -211,16 +190,11 @@ def _load_file_clean(file_bytes: bytes, file_name: str, skip_rows: int):
         ext = file_name.rsplit('.', 1)[-1].lower()
         if ext in ['xlsx', 'xls']:
             return pd.read_excel(io.BytesIO(file_bytes), engine='openpyxl', skiprows=skip_rows)
-        
-        # Parse CSV/TXT
         content = file_bytes.decode("utf-8", errors="ignore")
         lines = content.splitlines()
         if skip_rows >= len(lines): return None
-        
-        # Sniff separator from the header line
         header_line = lines[skip_rows]
         sep = '\t' if '\t' in header_line else (';' if ';' in header_line else ',')
-        
         df = pd.read_csv(io.StringIO(content), sep=sep, skiprows=skip_rows, engine='python', on_bad_lines='skip')
         df.columns = [str(c).strip() for c in df.columns]
         return df
@@ -245,8 +219,7 @@ def process_sample(strain_raw, stress_raw, fit_range, yield_method, yield_val, a
     if np.sum(mask_e) < 3:
         n_fb = max(3, len(strain)//10)
         mask_e = np.zeros(len(strain), bool); mask_e[:n_fb] = True
-    try:
-        E_slope, intercept_y = np.polyfit(strain[mask_e], stress[mask_e], 1)
+    try: E_slope, intercept_y = np.polyfit(strain[mask_e], stress[mask_e], 1)
     except Exception: return None
     if E_slope <= 0: return None
     
@@ -272,10 +245,8 @@ def process_sample(strain_raw, stress_raw, fit_range, yield_method, yield_val, a
             dev = np.where(theoretical > 0, np.abs(theoretical-stress)/theoretical, 0.0)
         iy_arr = np.where((dev > yield_val/100.0) & (strain > 0.1))[0]
         
-    if len(iy_arr) > 0:
-        iy = int(iy_arr[0]); y_stress = float(stress[iy]); y_strain = float(strain[iy])
-    else:
-        y_stress = y_strain = np.nan
+    if len(iy_arr) > 0: iy = int(iy_arr[0]); y_stress = float(stress[iy]); y_strain = float(strain[iy])
+    else: y_stress = y_strain = np.nan
         
     eps_frac = strain / 100.0
     true_strain = np.log(1.0 + eps_frac); true_stress = stress * (1.0 + eps_frac)
@@ -293,8 +264,7 @@ def process_sample(strain_raw, stress_raw, fit_range, yield_method, yield_val, a
             
     secant = {}
     for ts in [0.25, 0.5, 1.0, 2.0, 5.0, 10.0]:
-        if ts <= strain[-1] and ts > 0:
-            secant[ts] = round(float(np.interp(ts, strain, stress)) / (ts/100.0), 1)
+        if ts <= strain[-1] and ts > 0: secant[ts] = round(float(np.interp(ts, strain, stress)) / (ts/100.0), 1)
             
     try: toughness = float(np.trapezoid(stress, strain/100.0))
     except AttributeError: toughness = float(np.trapz(stress, strain/100.0))
@@ -303,15 +273,13 @@ def process_sample(strain_raw, stress_raw, fit_range, yield_method, yield_val, a
     fit_x = np.array([0.0, fit_range[1]*2.5]); fit_y = E_slope * fit_x
     
     return dict(
-        strain=strain, stress=stress, true_strain=true_strain, true_stress=true_stress,
-        E_MPa=round(E_MPa,1), E_slope=E_slope, y_stress=round(y_stress,2) if not np.isnan(y_stress) else np.nan,
-        y_strain=round(y_strain,3) if not np.isnan(y_strain) else np.nan, uts=round(float(stress.max()),2),
-        stress_break=round(float(stress[-1]),2), strain_break=round(float(strain[-1]),3),
+        strain=strain, stress=stress, true_strain=true_strain, true_stress=true_stress, E_MPa=round(E_MPa,1), E_slope=E_slope,
+        y_stress=round(y_stress,2) if not np.isnan(y_stress) else np.nan, y_strain=round(y_strain,3) if not np.isnan(y_strain) else np.nan,
+        uts=round(float(stress.max()),2), stress_break=round(float(stress[-1]),2), strain_break=round(float(strain[-1]),3),
         toughness=round(toughness,4), resilience=round(resilience,5) if not np.isnan(resilience) else np.nan,
         ductility_idx=round(ductility_idx,2) if not np.isnan(ductility_idx) else np.nan,
         h_n=round(h_n,3) if not np.isnan(h_n) else np.nan, h_K=round(h_K,2) if not np.isnan(h_K) else np.nan,
-        h_r2=round(h_r2,4) if not np.isnan(h_r2) else np.nan,
-        secant=secant, fit_x=fit_x, fit_y=fit_y, mat_class="Brittle" if np.isnan(y_stress) else "Ductile",
+        h_r2=round(h_r2,4) if not np.isnan(h_r2) else np.nan, secant=secant, fit_x=fit_x, fit_y=fit_y, mat_class="Brittle" if np.isnan(y_stress) else "Ductile",
     )
 
 def compute_weibull(uts_values):
@@ -349,16 +317,11 @@ def generate_journal_fig(results_dict, sample_colors, settings):
             ax.plot(mc["strain"],mc["mean"],'k--',lw=max(lw*0.7,1.0),label="Mean",zorder=5)
             ax.fill_between(mc["strain"],mc["lower"],mc["upper"],alpha=0.12,color='#555',label="±1 SD")
     ax.set_xbound(lower=0); ax.set_ybound(lower=0)
-    if not settings.get("auto_scale",True):
-        ax.set_xlim(0,settings["x_max"]); ax.set_ylim(0,settings["y_max"])
-    ax.set_xlabel("Strain (%)",fontweight="bold",labelpad=8)
-    ax.set_ylabel("Stress (MPa)",fontweight="bold",labelpad=8)
+    if not settings.get("auto_scale",True): ax.set_xlim(0,settings["x_max"]); ax.set_ylim(0,settings["y_max"])
+    ax.set_xlabel("Strain (%)",fontweight="bold",labelpad=8); ax.set_ylabel("Stress (MPa)",fontweight="bold",labelpad=8)
     loc = settings.get("legend_pos","lower right")
-    if loc == "outside":
-        ax.legend(loc="upper left",bbox_to_anchor=(1.02,1),frameon=False,fontsize=10)
-        fig.tight_layout(rect=[0,0,0.79,1])
-    else:
-        ax.legend(loc=loc,frameon=False,fontsize=10); fig.tight_layout()
+    if loc == "outside": ax.legend(loc="upper left",bbox_to_anchor=(1.02,1),frameon=False,fontsize=10); fig.tight_layout(rect=[0,0,0.79,1])
+    else: ax.legend(loc=loc,frameon=False,fontsize=10); fig.tight_layout()
     return fig
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -405,7 +368,7 @@ def compute_ci(mean, sd, n, alpha=0.05):
 def load_ageing_data(file):
     try:
         ext = file.name.rsplit('.',1)[-1].lower()
-        df = pd.read_excel(file, engine='openpyxl') if ext == 'xlsx' else pd.read_csv(file)
+        df = pd.read_excel(file, engine='openpyxl') if ext in ['xlsx', 'xls'] else pd.read_csv(file)
         df.columns = [str(c).strip() for c in df.columns]
         missing = [c for c in ["Formulation","Condition","Days"] if c not in df.columns]
         if missing: st.error(f"Missing required columns: {missing}"); return None
@@ -499,7 +462,7 @@ with st.sidebar:
         if use_arrhenius:
             arr_temps_str = st.text_input("Oven Temperatures (°C, comma-separated)", "60, 70, 80")
 
-    st.markdown("""<div style="padding:0.6rem 0 0.3rem;text-align:center;font-family:'IBM Plex Sans',sans-serif;font-size:0.6rem;color:#7f8c8d;letter-spacing:0.1em;">Research & Academic Use Only · v4.1</div>""", unsafe_allow_html=True)
+    st.markdown("""<div style="padding:0.6rem 0 0.3rem;text-align:center;font-family:'IBM Plex Sans',sans-serif;font-size:0.6rem;color:#7f8c8d;letter-spacing:0.1em;">Research & Academic Use Only · v4.2</div>""", unsafe_allow_html=True)
 
 # ═══════════════════════════════════════════════════════════════════════════
 # PAGE 1 — TENSILE ANALYSIS
@@ -562,7 +525,7 @@ if page == "🔬 Tensile Analysis":
         d_idx = global_cols.index(def_d) if def_d in global_cols else (1 if len(global_cols) > 1 else 0)
 
         # --- GLOBAL BULK UI ---
-        with st.expander("⚡ Global Data & Modulus Settings (Applies to all files)", expanded=True):
+        with st.expander("⚡ Global Settings & Bulk Apply", expanded=True):
             st.markdown("**1. Global Column Selection**")
             gc1, gc2 = st.columns(2)
             global_f_col = gc1.selectbox("Global Force/Stress Column", global_cols, index=f_idx, key="glob_f")
@@ -571,7 +534,8 @@ if page == "🔬 Tensile Analysis":
             st.markdown("**2. Modulus & Yield Settings**")
             bc1,bc2,bc3,bc4 = st.columns([2,2,2,1])
             bulk_r  = bc1.slider("Global Fit Range (%)",0.0,20.0,(0.2,1.0),key="br")
-            bulk_m  = bc2.selectbox("Global Yield Method",["0.2% Offset Method","Departure from Linearity"],key="bm")
+            # FIXED: Made Yield Method a select_slider per request
+            bulk_m  = bc2.select_slider("Global Yield Method", options=["0.2% Offset Method","Departure from Linearity"], value="0.2% Offset Method", key="bm")
             bulk_v  = bc3.slider("Global Offset (%)",0.01,5.0,0.2,0.01,key="bv")
             st.caption("Adjusting sliders updates graphs instantly. Hit 'Apply All' to sync unlinked files.")
             if bc4.button("Apply All", type="primary"):
@@ -603,7 +567,12 @@ if page == "🔬 Tensile Analysis":
 
                 r2 = st.columns([2,2,2])
                 fit_range = r2[0].slider("Modulus Fit Range (%)",0.0,20.0, st.session_state.get(f"range_{file.name}_sl", bulk_r), key=f"range_{file.name}_sl")
-                yield_method = r2[1].selectbox("Yield Method", ["0.2% Offset Method","Departure from Linearity"], index=["0.2% Offset Method","Departure from Linearity"].index(st.session_state.get(f"meth_{file.name}_sl", bulk_m)), key=f"meth_{file.name}_sl")
+                
+                # Dynamic failsafe for the slider state
+                current_ym_val = st.session_state.get(f"meth_{file.name}_sl", bulk_m)
+                if current_ym_val not in ["0.2% Offset Method","Departure from Linearity"]: current_ym_val = "0.2% Offset Method"
+                yield_method = r2[1].select_slider("Yield Method", options=["0.2% Offset Method","Departure from Linearity"], value=current_ym_val, key=f"meth_{file.name}_sl")
+                
                 yield_val = r2[2].slider("Offset/Sensitivity (%)",0.01,5.0, st.session_state.get(f"val_{file.name}_sl", bulk_v), 0.01, key=f"val_{file.name}_sl")
 
                 df_c = df_raw[[f_col,d_col]].apply(pd.to_numeric,errors='coerce').dropna()
@@ -805,30 +774,110 @@ if page == "🔬 Tensile Analysis":
             st.dataframe(res_df,hide_index=True,use_container_width=True)
 
         with out_tabs[6]:
-            section_hdr("Export","💾")
+            section_hdr("Export Full Analytics & Plots","💾")
             ec1,ec2=st.columns(2)
             with ec1:
-                st.markdown("**📊 Full Excel Report**")
+                st.markdown("**📊 Generate Full Excel Report**")
+                st.caption("Exports all raw data arrays, analytical results, and high-res chart images into one comprehensive workbook.")
                 xl_buf=io.BytesIO()
                 try:
                     with pd.ExcelWriter(xl_buf,engine='xlsxwriter') as w:
                         res_df.to_excel(w,sheet_name='Results',index=False)
                         stats_df.to_excel(w,sheet_name='Batch_Statistics')
+                        
+                        # 1. Raw Curves (Eng & True)
                         raw_fs=[]
                         for name,r in plot_data.items():
                             raw_fs.append(pd.DataFrame({f"{name}_Strain(%)":r["strain"],f"{name}_Stress(MPa)":r["stress"], f"{name}_TrueStrain":r["true_strain"],f"{name}_TrueStress(MPa)":r["true_stress"]}))
                         if raw_fs: pd.concat(raw_fs,axis=1).to_excel(w,sheet_name='Raw_Curves',index=False)
-                        pd.DataFrame([{"Sample":rr["Sample"],"n":rr["Hollomon n"],"K(MPa)":rr["Hollomon K [MPa]"],"R²":rr["Hollomon R²"]} for rr in all_results]).to_excel(w,sheet_name='Hollomon',index=False)
+                        
+                        # 2. Hollomon Summary & Raw Data
+                        pd.DataFrame([{"Sample":rr["Sample"],"n":rr["Hollomon n"],"K(MPa)":rr["Hollomon K [MPa]"],"R²":rr["Hollomon R²"]} for rr in all_results]).to_excel(w,sheet_name='Hollomon_Summary',index=False)
+                        hol_raw_dfs = []
+                        for name, r in plot_data.items():
+                            if not np.isnan(r["h_n"]):
+                                pm = r["strain"] >= (r["y_strain"] if not np.isnan(r["y_strain"]) else 0)
+                                te_p = r["true_strain"][pm]; ts_p = r["true_stress"][pm]; v = (ts_p > 0) & (te_p > 0)
+                                if v.sum() > 2:
+                                    hol_raw_dfs.append(pd.DataFrame({f"{name}_ln(TrueStrain)": np.log(te_p[v]), f"{name}_ln(TrueStress)": np.log(ts_p[v])}))
+                        if hol_raw_dfs: pd.concat(hol_raw_dfs, axis=1).to_excel(w, sheet_name='Hollomon_RawData', index=False)
+
+                        # 3. Secant Data
                         if 'sec_rows' in locals(): pd.DataFrame(sec_rows).to_excel(w, sheet_name='Secant_Data', index=False)
                         
+                        # 4. Weibull Data
+                        if 'wb_data' in locals() and wb_data: pd.DataFrame({"ln(UTS)": wb_data["x"], "ln(ln(1/(1-Pf)))": wb_data["y"]}).to_excel(w, sheet_name='Weibull_Data', index=False)
+                        
+                        # 5. Mean Curve Data
+                        if 'mean_curve' in locals() and mean_curve: pd.DataFrame({"Strain(%)": mean_curve["strain"], "Mean_Stress(MPa)": mean_curve["mean"], "Upper_SD": mean_curve["upper"], "Lower_SD": mean_curve["lower"]}).to_excel(w, sheet_name='Mean_Curve_Data', index=False)
+                        
+                        # ============================================================
+                        # PLOT EMBEDDING GENERATION
+                        # ============================================================
                         plt.rcParams.update({"font.family":"serif","font.size":10})
+                        
+                        # A. Standard Journal Plot
+                        ps=w.book.add_worksheet('Plot_Journal')
+                        ps.write('A1','Engineering Stress-Strain Curve')
+                        ie=io.BytesIO(); journal_fig.savefig(ie,format='png',dpi=200,bbox_inches='tight'); ie.seek(0)
+                        ps.insert_image('A3','p1.png',{'image_data':ie})
+                        
+                        # B. True Stress-Strain Plot
                         fig_t_exp, ax_t = plt.subplots(figsize=(7,5))
                         for name, r in plot_data.items(): ax_t.plot(r["true_strain"]*100, r["true_stress"], label=name, color=sample_colors.get(name,"#000"))
                         ax_t.set_xlabel("True Strain (%)"); ax_t.set_ylabel("True Stress (MPa)"); ax_t.legend(); fig_t_exp.tight_layout()
-                        buf_t = io.BytesIO(); fig_t_exp.savefig(buf_t, format='png', dpi=150); buf_t.seek(0)
-                        w.book.add_worksheet('Plot_TrueSS').insert_image('A1', 't.png', {'image_data': buf_t})
+                        buf_t = io.BytesIO(); fig_t_exp.savefig(buf_t, format='png', dpi=200); buf_t.seek(0)
+                        w.book.add_worksheet('Plot_TrueSS').insert_image('A1', 'p2.png', {'image_data': buf_t})
                         plt.close(fig_t_exp)
-                    st.download_button("📥 Download Excel Report",xl_buf.getvalue(), "Tensile_Report_v4.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
+                        
+                        # C. Log-Log Hollomon Plot
+                        fig_h_exp, ax_h = plt.subplots(figsize=(7,5))
+                        for name, r in plot_data.items():
+                            if not np.isnan(r["h_n"]):
+                                pm = r["strain"] >= (r["y_strain"] if not np.isnan(r["y_strain"]) else 0)
+                                te_p = r["true_strain"][pm]; ts_p = r["true_stress"][pm]; v = (ts_p > 0) & (te_p > 0)
+                                if v.sum() > 2:
+                                    lx = np.log(te_p[v]); ly = np.log(ts_p[v])
+                                    ax_h.plot(lx, ly, 'o', color=sample_colors.get(name,"#000"), alpha=0.5, ms=4)
+                                    lxf = np.linspace(lx.min(), lx.max(), 60)
+                                    ax_h.plot(lxf, r["h_n"]*lxf + np.log(r["h_K"]), '--', color=sample_colors.get(name,"#000"), label=f"{name} (n={r['h_n']:.3f})")
+                        ax_h.set_xlabel("ln(True Strain)"); ax_h.set_ylabel("ln(True Stress MPa)"); ax_h.legend(); fig_h_exp.tight_layout()
+                        buf_h = io.BytesIO(); fig_h_exp.savefig(buf_h, format='png', dpi=200); buf_h.seek(0)
+                        w.book.add_worksheet('Plot_Hollomon').insert_image('A1', 'p3.png', {'image_data': buf_h})
+                        plt.close(fig_h_exp)
+                        
+                        # D. Secant Modulus Plot
+                        fig_s_exp, ax_s = plt.subplots(figsize=(7,5))
+                        for name, r in plot_data.items():
+                            sx = sorted(r["secant"].keys()); sy = [r["secant"][k] for k in sx]
+                            if sx: ax_s.plot(sx, sy, '-o', label=name, color=sample_colors.get(name,"#000"))
+                        ax_s.set_xlabel("Strain Level (%)"); ax_s.set_ylabel("Secant Modulus (MPa)"); ax_s.legend(); fig_s_exp.tight_layout()
+                        buf_s = io.BytesIO(); fig_s_exp.savefig(buf_s, format='png', dpi=200); buf_s.seek(0)
+                        w.book.add_worksheet('Plot_Secant').insert_image('A1', 'p4.png', {'image_data': buf_s})
+                        plt.close(fig_s_exp)
+
+                        # E. Weibull Plot
+                        if 'wb_data' in locals() and wb_data:
+                            fig_w_exp, ax_w = plt.subplots(figsize=(7,5))
+                            ax_w.plot(wb_data["x"], wb_data["y"], 'o', color='#002244', ms=8)
+                            ax_w.plot(wb_data["fx"], wb_data["fy"], '-', color='#c9a84c', lw=2, label=f"m={wb_data['m']}")
+                            ax_w.set_xlabel("ln(UTS)"); ax_w.set_ylabel("ln(ln(1/(1-Pf)))"); ax_w.legend(); fig_w_exp.tight_layout()
+                            buf_w = io.BytesIO(); fig_w_exp.savefig(buf_w, format='png', dpi=200); buf_w.seek(0)
+                            w.book.add_worksheet('Plot_Weibull').insert_image('A1', 'p5.png', {'image_data': buf_w})
+                            plt.close(fig_w_exp)
+
+                        # F. Mean Curve Plot
+                        if 'mean_curve' in locals() and mean_curve:
+                            fig_m_exp, ax_m = plt.subplots(figsize=(7,5))
+                            ax_m.fill_between(mean_curve["strain"], mean_curve["lower"], mean_curve["upper"], alpha=0.2, color='#555')
+                            for name, r in plot_data.items(): ax_m.plot(r["strain"], r["stress"], lw=1, alpha=0.4, color=sample_colors.get(name,"#aaa"))
+                            ax_m.plot(mean_curve["strain"], mean_curve["mean"], 'k--', lw=2, label="Mean")
+                            ax_m.set_xlabel("Strain (%)"); ax_m.set_ylabel("Stress (MPa)"); ax_m.legend(); fig_m_exp.tight_layout()
+                            buf_m = io.BytesIO(); fig_m_exp.savefig(buf_m, format='png', dpi=200); buf_m.seek(0)
+                            w.book.add_worksheet('Plot_MeanCurve').insert_image('A1', 'p6.png', {'image_data': buf_m})
+                            plt.close(fig_m_exp)
+
+                    st.download_button("📥 Download Excel Report",xl_buf.getvalue(), "Tensile_Report_v4-2.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
                 except Exception as e: st.error(f"Export error: {e}")
             with ec2:
                 st.markdown("**🖼️ 600 DPI Journal TIFF**")
@@ -839,7 +888,6 @@ if page == "🔬 Tensile Analysis":
                 except Exception as e: st.error(f"TIFF error: {e}")
     else:
         st.markdown("""<div style="margin-top:3rem;padding:3rem 2rem;background:#fff;border:1px solid #dde3ec;border-radius:4px;text-align:center;"><div style="font-size:2.5rem;margin-bottom:1rem;">📉</div><div style="font-family:'Playfair Display',Georgia,serif;font-size:1.4rem;color:#002244;margin-bottom:0.5rem;font-weight:700;">Upload tensile data files to begin</div></div>""", unsafe_allow_html=True)
-
 
 # ═══════════════════════════════════════════════════════════════════════════
 # PAGE 2 — AGEING TREND ANALYSIS
