@@ -84,17 +84,27 @@ input[type="number"] { -moz-appearance:textfield; }
 [data-testid="stFileUploadDropzone"]:hover { border-color:var(--gold) !important; }
 
 /* ── ULTIMATE DROPDOWN VISIBILITY FIX ── */
-[data-baseweb="popover"], div[role="listbox"], ul[data-baseweb="menu"] {
+div[data-baseweb="popover"], div[data-baseweb="popover"] > div, 
+div[role="listbox"], ul[data-baseweb="menu"], ul[role="listbox"] {
+    background-color: #ffffff !important;
+    z-index: 999999 !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+[data-baseweb="menu"] li, [data-baseweb="menu"] li *, 
+div[role="option"], div[role="option"] *, 
+li[role="option"], li[role="option"] * {
+    color: #002244 !important;
     background-color: #ffffff !important;
 }
-[data-baseweb="menu"] li, [data-baseweb="menu"] li *, div[role="option"], div[role="option"] * {
-    color: #002244 !important;
-    background-color: transparent !important;
-}
-[data-baseweb="menu"] li:hover, div[role="option"]:hover, div[role="option"]:focus {
+[data-baseweb="menu"] li:hover, div[role="option"]:hover, div[role="option"]:focus, 
+li[role="option"]:hover, li[role="option"]:focus,
+[data-baseweb="menu"] li[aria-selected="true"],
+li[role="option"][aria-selected="true"] {
     background-color: #f7f9fc !important;
 }
-[data-baseweb="menu"] li:hover *, div[role="option"]:hover * {
+[data-baseweb="menu"] li:hover *, div[role="option"]:hover *, 
+li[role="option"]:hover * {
     color: #c9a84c !important;
 }
 
