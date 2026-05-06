@@ -1,5 +1,5 @@
 """
-Solomon Tensile Master Pro v4.5
+Solomon Tensile Master Pro v4.6
 ─────────────────────────────────────────────────────────────────────────────
 Integrated platform:
   Page 1 — Tensile Analysis      (Rock-solid parsing + 50% Yield Slider)
@@ -37,7 +37,7 @@ except ImportError:
 # PAGE CONFIG & CSS
 # ═══════════════════════════════════════════════════════════════════════════
 st.set_page_config(
-    page_title="Tensile Master Pro 4.5 | Solomon Scientific",
+    page_title="Tensile Master Pro 4.6 | Solomon Scientific",
     page_icon="LOGO.png",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -83,9 +83,22 @@ input[type="number"] { -moz-appearance:textfield; }
 [data-testid="stFileUploadDropzone"] { background:var(--white) !important; border:1.5px dashed var(--border) !important; border-radius:3px !important; }
 [data-testid="stFileUploadDropzone"]:hover { border-color:var(--gold) !important; }
 
-div[data-baseweb="popover"] > div, ul[data-baseweb="menu"] { background-color: var(--white) !important; }
-ul[data-baseweb="menu"] li { color: var(--text) !important; background-color: transparent !important; }
-ul[data-baseweb="menu"] li:hover { background-color: var(--off) !important; }
+/* ── Bulletproof Dropdown Visibility Fix ── */
+[data-baseweb="popover"], [data-baseweb="popover"] > div, [data-baseweb="menu"] {
+    background-color: #ffffff !important;
+}
+[data-baseweb="menu"] li, [data-baseweb="menu"] li span, [data-baseweb="menu"] li div {
+    color: #0f1923 !important;
+    background-color: #ffffff !important;
+}
+[data-baseweb="menu"] li:hover, [data-baseweb="menu"] li:hover span, [data-baseweb="menu"] li:hover div {
+    background-color: #f7f9fc !important;
+    color: #c9a84c !important;
+}
+span[data-baseweb="tag"] {
+    background-color: #dde3ec !important;
+    color: #002244 !important;
+}
 
 .stButton>button {
     background:var(--off) !important; color:var(--navy2) !important; border:1px solid var(--border) !important; border-radius:3px !important;
@@ -159,7 +172,7 @@ def render_header(page_label=""):
     st.markdown(f"""
     <div style="display:flex;align-items:center;justify-content:space-between;padding:1.2rem 2rem;background:#002244;border-radius:4px;margin-bottom:1.25rem;">
       <div style="display:flex;align-items:center;gap:1.2rem;">{icon}
-        <div><div style="font-family:'Playfair Display',Georgia,serif;font-size:1.6rem;font-weight:700;color:#f0f4fb;line-height:1.1;">Solomon Tensile Master Pro<span style="color:#c9a84c;"> 4.5</span>{badge}</div>
+        <div><div style="font-family:'Playfair Display',Georgia,serif;font-size:1.6rem;font-weight:700;color:#f0f4fb;line-height:1.1;">Solomon Tensile Master Pro<span style="color:#c9a84c;"> 4.6</span>{badge}</div>
         <div style="font-family:'IBM Plex Sans',sans-serif;font-size:0.66rem;color:#a8b4c8;letter-spacing:0.18em;text-transform:uppercase;margin-top:3px;">Advanced Mechanical &amp; Ageing Analysis Framework &nbsp;·&nbsp; Solomon Scientific</div></div>
       </div>
     </div>""", unsafe_allow_html=True)
@@ -170,7 +183,7 @@ def render_sidebar_brand():
     st.markdown(f"""
     <div style="padding:0.75rem 0 0.3rem;text-align:center;">{icon}
       <div style="font-family:'IBM Plex Sans',sans-serif;font-size:0.58rem;color:#9c7a32;letter-spacing:0.2em;text-transform:uppercase;font-weight:700;">Solomon Scientific</div>
-      <div style="font-family:'Playfair Display',Georgia,serif;font-size:0.9rem;font-weight:700;color:#002244;">Master Pro <span style="color:#c9a84c;">4.5</span></div>
+      <div style="font-family:'Playfair Display',Georgia,serif;font-size:0.9rem;font-weight:700;color:#002244;">Master Pro <span style="color:#c9a84c;">4.6</span></div>
     </div>""", unsafe_allow_html=True)
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -371,7 +384,6 @@ def compute_ci(mean, sd, n, alpha=0.05):
     return float(t_dist.ppf(1-alpha/2, df=n-1) * sd / np.sqrt(n)) if HAS_SCIPY else float(1.96 * sd / np.sqrt(n))
 
 def build_ageing_template():
-    # MULTI-LINE DICTIONARY FIX
     np.random.seed(42)
     forms = ["Pure PBAT", "PBAT/PLA 80:20", "PBAT/PLA+5%NFC"]
     conds = ["Oven", "UV-Xenon"]
@@ -520,7 +532,7 @@ with st.sidebar:
         if use_arrhenius:
             arr_temps_str = st.text_input("Oven Temperatures (°C, comma-separated)", "60, 70, 80")
 
-    st.markdown("""<div style="padding:0.6rem 0 0.3rem;text-align:center;font-family:'IBM Plex Sans',sans-serif;font-size:0.6rem;color:#7f8c8d;letter-spacing:0.1em;">Research & Academic Use Only · v4.5</div>""", unsafe_allow_html=True)
+    st.markdown("""<div style="padding:0.6rem 0 0.3rem;text-align:center;font-family:'IBM Plex Sans',sans-serif;font-size:0.6rem;color:#7f8c8d;letter-spacing:0.1em;">Research & Academic Use Only · v4.6</div>""", unsafe_allow_html=True)
 
 # ═══════════════════════════════════════════════════════════════════════════
 # PAGE 1 — TENSILE ANALYSIS
@@ -831,13 +843,11 @@ if page == "🔬 Tensile Analysis":
                         res_df.to_excel(w,sheet_name='Results',index=False)
                         stats_df.to_excel(w,sheet_name='Batch_Statistics')
                         
-                        # 1. Raw Curves (Eng & True)
                         raw_fs=[]
                         for name,r in plot_data.items():
                             raw_fs.append(pd.DataFrame({f"{name}_Strain(%)":r["strain"],f"{name}_Stress(MPa)":r["stress"], f"{name}_TrueStrain(abs)":r["true_strain"],f"{name}_TrueStress(MPa)":r["true_stress"]}))
                         if raw_fs: pd.concat(raw_fs,axis=1).to_excel(w,sheet_name='Raw_Curves',index=False)
                         
-                        # 2. Hollomon Summary & Raw Data
                         pd.DataFrame([{"Sample":rr["Sample"],"n":rr["Hollomon n"],"K(MPa)":rr["Hollomon K [MPa]"],"R²":rr["Hollomon R²"]} for rr in all_results]).to_excel(w,sheet_name='Hollomon_Summary',index=False)
                         hol_raw_dfs = []
                         for name, r in plot_data.items():
@@ -848,27 +858,17 @@ if page == "🔬 Tensile Analysis":
                                     hol_raw_dfs.append(pd.DataFrame({f"{name}_ln(TrueStrain)": np.log(te_p[v]), f"{name}_ln(TrueStress)": np.log(ts_p[v])}))
                         if hol_raw_dfs: pd.concat(hol_raw_dfs, axis=1).to_excel(w, sheet_name='Hollomon_RawData', index=False)
 
-                        # 3. Secant Data
                         if 'sec_rows' in locals(): pd.DataFrame(sec_rows).to_excel(w, sheet_name='Secant_Data', index=False)
-                        
-                        # 4. Weibull Data
                         if 'wb_data' in locals() and wb_data: pd.DataFrame({"ln(UTS)": wb_data["x"], "ln(ln(1/(1-Pf)))": wb_data["y"]}).to_excel(w, sheet_name='Weibull_Data', index=False)
-                        
-                        # 5. Mean Curve Data
                         if 'mean_curve' in locals() and mean_curve: pd.DataFrame({"Strain(%)": mean_curve["strain"], "Mean_Stress(MPa)": mean_curve["mean"], "Upper_SD": mean_curve["upper"], "Lower_SD": mean_curve["lower"]}).to_excel(w, sheet_name='Mean_Curve_Data', index=False)
                         
-                        # ============================================================
-                        # PLOT EMBEDDING GENERATION
-                        # ============================================================
                         plt.rcParams.update({"font.family":"serif","font.size":10})
                         
-                        # A. Standard Journal Plot
                         ps=w.book.add_worksheet('Plot_Journal')
                         ps.write('A1','Engineering Stress-Strain Curve')
                         ie=io.BytesIO(); journal_fig.savefig(ie,format='png',dpi=200,bbox_inches='tight'); ie.seek(0)
                         ps.insert_image('A3','p1.png',{'image_data':ie})
                         
-                        # B. True Stress-Strain Plot
                         fig_t_exp, ax_t = plt.subplots(figsize=(7,5))
                         for name, r in plot_data.items(): ax_t.plot(r["true_strain"]*100, r["true_stress"], label=name, color=sample_colors.get(name,"#000"))
                         ax_t.set_xlabel("True Strain (%)"); ax_t.set_ylabel("True Stress (MPa)"); ax_t.legend(); fig_t_exp.tight_layout()
@@ -876,7 +876,6 @@ if page == "🔬 Tensile Analysis":
                         w.book.add_worksheet('Plot_TrueSS').insert_image('A1', 'p2.png', {'image_data': buf_t})
                         plt.close(fig_t_exp)
                         
-                        # C. Log-Log Hollomon Plot
                         fig_h_exp, ax_h = plt.subplots(figsize=(7,5))
                         for name, r in plot_data.items():
                             if not np.isnan(r["h_n"]):
@@ -892,7 +891,6 @@ if page == "🔬 Tensile Analysis":
                         w.book.add_worksheet('Plot_Hollomon').insert_image('A1', 'p3.png', {'image_data': buf_h})
                         plt.close(fig_h_exp)
                         
-                        # D. Secant Modulus Plot
                         fig_s_exp, ax_s = plt.subplots(figsize=(7,5))
                         for name, r in plot_data.items():
                             sx = sorted(r["secant"].keys()); sy = [r["secant"][k] for k in sx]
@@ -902,7 +900,6 @@ if page == "🔬 Tensile Analysis":
                         w.book.add_worksheet('Plot_Secant').insert_image('A1', 'p4.png', {'image_data': buf_s})
                         plt.close(fig_s_exp)
 
-                        # E. Weibull Plot
                         if 'wb_data' in locals() and wb_data:
                             fig_w_exp, ax_w = plt.subplots(figsize=(7,5))
                             ax_w.plot(wb_data["x"], wb_data["y"], 'o', color='#002244', ms=8)
@@ -912,7 +909,6 @@ if page == "🔬 Tensile Analysis":
                             w.book.add_worksheet('Plot_Weibull').insert_image('A1', 'p5.png', {'image_data': buf_w})
                             plt.close(fig_w_exp)
 
-                        # F. Mean Curve Plot
                         if 'mean_curve' in locals() and mean_curve:
                             fig_m_exp, ax_m = plt.subplots(figsize=(7,5))
                             ax_m.fill_between(mean_curve["strain"], mean_curve["lower"], mean_curve["upper"], alpha=0.2, color='#555')
@@ -923,7 +919,7 @@ if page == "🔬 Tensile Analysis":
                             w.book.add_worksheet('Plot_MeanCurve').insert_image('A1', 'p6.png', {'image_data': buf_m})
                             plt.close(fig_m_exp)
 
-                    st.download_button("📥 Download Excel Report",xl_buf.getvalue(), "Tensile_Report_v4-5.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
+                    st.download_button("📥 Download Excel Report",xl_buf.getvalue(), "Tensile_Report_v4-6.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
                 except Exception as e: st.error(f"Export error: {e}")
             with ec2:
                 st.markdown("**🖼️ 600 DPI Journal TIFF**")
