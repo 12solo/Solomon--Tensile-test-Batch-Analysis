@@ -1,5 +1,5 @@
 """
-Solomon Tensile Master Pro v4.4
+Solomon Tensile Master Pro v4.5
 ─────────────────────────────────────────────────────────────────────────────
 Integrated platform:
   Page 1 — Tensile Analysis      (Rock-solid parsing + 50% Yield Slider)
@@ -37,7 +37,7 @@ except ImportError:
 # PAGE CONFIG & CSS
 # ═══════════════════════════════════════════════════════════════════════════
 st.set_page_config(
-    page_title="Tensile Master Pro 4.4 | Solomon Scientific",
+    page_title="Tensile Master Pro 4.5 | Solomon Scientific",
     page_icon="LOGO.png",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -159,7 +159,7 @@ def render_header(page_label=""):
     st.markdown(f"""
     <div style="display:flex;align-items:center;justify-content:space-between;padding:1.2rem 2rem;background:#002244;border-radius:4px;margin-bottom:1.25rem;">
       <div style="display:flex;align-items:center;gap:1.2rem;">{icon}
-        <div><div style="font-family:'Playfair Display',Georgia,serif;font-size:1.6rem;font-weight:700;color:#f0f4fb;line-height:1.1;">Solomon Tensile Master Pro<span style="color:#c9a84c;"> 4.4</span>{badge}</div>
+        <div><div style="font-family:'Playfair Display',Georgia,serif;font-size:1.6rem;font-weight:700;color:#f0f4fb;line-height:1.1;">Solomon Tensile Master Pro<span style="color:#c9a84c;"> 4.5</span>{badge}</div>
         <div style="font-family:'IBM Plex Sans',sans-serif;font-size:0.66rem;color:#a8b4c8;letter-spacing:0.18em;text-transform:uppercase;margin-top:3px;">Advanced Mechanical &amp; Ageing Analysis Framework &nbsp;·&nbsp; Solomon Scientific</div></div>
       </div>
     </div>""", unsafe_allow_html=True)
@@ -170,7 +170,7 @@ def render_sidebar_brand():
     st.markdown(f"""
     <div style="padding:0.75rem 0 0.3rem;text-align:center;">{icon}
       <div style="font-family:'IBM Plex Sans',sans-serif;font-size:0.58rem;color:#9c7a32;letter-spacing:0.2em;text-transform:uppercase;font-weight:700;">Solomon Scientific</div>
-      <div style="font-family:'Playfair Display',Georgia,serif;font-size:0.9rem;font-weight:700;color:#002244;">Master Pro <span style="color:#c9a84c;">4.4</span></div>
+      <div style="font-family:'Playfair Display',Georgia,serif;font-size:0.9rem;font-weight:700;color:#002244;">Master Pro <span style="color:#c9a84c;">4.5</span></div>
     </div>""", unsafe_allow_html=True)
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -371,19 +371,42 @@ def compute_ci(mean, sd, n, alpha=0.05):
     return float(t_dist.ppf(1-alpha/2, df=n-1) * sd / np.sqrt(n)) if HAS_SCIPY else float(1.96 * sd / np.sqrt(n))
 
 def build_ageing_template():
-    # FIXED: Separate the function call from the variable assignment
+    # MULTI-LINE DICTIONARY FIX
     np.random.seed(42)
-    forms, conds, days = ["Pure PBAT", "PBAT/PLA 80:20", "PBAT/PLA+5%NFC"], ["Oven", "UV-Xenon"], [0, 7, 14, 21, 28]
+    forms = ["Pure PBAT", "PBAT/PLA 80:20", "PBAT/PLA+5%NFC"]
+    conds = ["Oven", "UV-Xenon"]
+    days = [0, 7, 14, 21, 28]
     rows = []
-    base = {"Pure PBAT": dict(E=520, UTS=22, Yield=12, Elong=680, Tough=0.12, Resil=0.0014), "PBAT/PLA 80:20": dict(E=780, UTS=32, Yield=18, Elong=420, Tough=0.09, Resil=0.0021), "PBAT/PLA+5%NFC": dict(E=950, UTS=38, Yield=22, Elong=310, Tough=0.08, Resil=0.0026)} Elong=310, Tough=0.08, Resil=0.0026)},
-    decay = {"Oven": dict(E=0.004, UTS=0.006, Yield=0.005, Elong=-0.003, Tough=0.007, Resil=0.005), "UV-Xenon": dict(E=0.006, UTS=0.010, Yield=0.008, Elong=-0.004, Tough=0.011, Resil=0.008)}
+    base = {
+        "Pure PBAT": dict(E=520, UTS=22, Yield=12, Elong=680, Tough=0.12, Resil=0.0014),
+        "PBAT/PLA 80:20": dict(E=780, UTS=32, Yield=18, Elong=420, Tough=0.09, Resil=0.0021),
+        "PBAT/PLA+5%NFC": dict(E=950, UTS=38, Yield=22, Elong=310, Tough=0.08, Resil=0.0026)
+    }
+    decay = {
+        "Oven": dict(E=0.004, UTS=0.006, Yield=0.005, Elong=-0.003, Tough=0.007, Resil=0.005),
+        "UV-Xenon": dict(E=0.006, UTS=0.010, Yield=0.008, Elong=-0.004, Tough=0.011, Resil=0.008)
+    }
     for f in forms:
         for c in conds:
             for d in days:
                 b = base[f]; dc = decay[c]
-                def val(prop, prp): r = b[prop] * np.exp(-dc[prp] * d); return round(r, 2), round(r * 0.06, 2)
-                E_m, E_s = val("E", "E"); U_m, U_s = val("UTS", "UTS"); Y_m, Y_s = val("Yield", "Yield"); T_m, T_s = val("Tough", "Tough"); R_m, R_s = val("Resil", "Resil")
-                rows.append({"Formulation": f, "Condition": c, "Days": d, "n": 5, "E_MPa": E_m, "E_SD": E_s, "UTS_MPa": U_m, "UTS_SD": U_s, "Yield_MPa": Y_m, "Yield_SD": Y_s, "Elongation_pct": round(b["Elong"] * np.exp(dc["Elong"] * d), 1), "Elongation_SD": round(b["Elong"] * 0.08, 1), "Toughness_MJm3": T_m, "Toughness_SD": T_s, "Resilience_MJm3": R_m, "Resilience_SD": R_s})
+                def val(prop, prp): 
+                    r = b[prop] * np.exp(-dc[prp] * d)
+                    return round(r, 2), round(r * 0.06, 2)
+                E_m, E_s = val("E", "E")
+                U_m, U_s = val("UTS", "UTS")
+                Y_m, Y_s = val("Yield", "Yield")
+                T_m, T_s = val("Tough", "Tough")
+                R_m, R_s = val("Resil", "Resil")
+                rows.append({
+                    "Formulation": f, "Condition": c, "Days": d, "n": 5, 
+                    "E_MPa": E_m, "E_SD": E_s, "UTS_MPa": U_m, "UTS_SD": U_s, 
+                    "Yield_MPa": Y_m, "Yield_SD": Y_s, 
+                    "Elongation_pct": round(b["Elong"] * np.exp(dc["Elong"] * d), 1), 
+                    "Elongation_SD": round(b["Elong"] * 0.08, 1), 
+                    "Toughness_MJm3": T_m, "Toughness_SD": T_s, 
+                    "Resilience_MJm3": R_m, "Resilience_SD": R_s
+                })
     return pd.DataFrame(rows)
 
 def template_to_excel():
@@ -497,7 +520,7 @@ with st.sidebar:
         if use_arrhenius:
             arr_temps_str = st.text_input("Oven Temperatures (°C, comma-separated)", "60, 70, 80")
 
-    st.markdown("""<div style="padding:0.6rem 0 0.3rem;text-align:center;font-family:'IBM Plex Sans',sans-serif;font-size:0.6rem;color:#7f8c8d;letter-spacing:0.1em;">Research & Academic Use Only · v4.4</div>""", unsafe_allow_html=True)
+    st.markdown("""<div style="padding:0.6rem 0 0.3rem;text-align:center;font-family:'IBM Plex Sans',sans-serif;font-size:0.6rem;color:#7f8c8d;letter-spacing:0.1em;">Research & Academic Use Only · v4.5</div>""", unsafe_allow_html=True)
 
 # ═══════════════════════════════════════════════════════════════════════════
 # PAGE 1 — TENSILE ANALYSIS
@@ -725,7 +748,6 @@ if page == "🔬 Tensile Analysis":
                             lx=np.log(te_p[v]); ly=np.log(ts_p[v])
                             fig_h.add_trace(go.Scatter(x=lx,y=ly,mode='markers',name=name,marker=dict(color=col,size=5,opacity=0.7)))
                             lxf=np.linspace(lx.min(),lx.max(),60)
-                            # FIXED: Proper predictive line calculation for Hollomon
                             fig_h.add_trace(go.Scatter(x=lxf,y=r["h_n"]*lxf+np.log(r["h_K"]),mode='lines',line=dict(color=col,width=1.5,dash='dash'),showlegend=False))
                     hrows.append({"Sample":name,"n":r["h_n"],"K (MPa)":r["h_K"],"R²":r["h_r2"],"Class":r["mat_class"]})
                 if fig_h.data:
@@ -802,16 +824,20 @@ if page == "🔬 Tensile Analysis":
             ec1,ec2=st.columns(2)
             with ec1:
                 st.markdown("**📊 Generate Full Excel Report**")
+                st.caption("Exports all raw data arrays, analytical results, and high-res chart images into one comprehensive workbook.")
                 xl_buf=io.BytesIO()
                 try:
                     with pd.ExcelWriter(xl_buf,engine='xlsxwriter') as w:
                         res_df.to_excel(w,sheet_name='Results',index=False)
                         stats_df.to_excel(w,sheet_name='Batch_Statistics')
+                        
+                        # 1. Raw Curves (Eng & True)
                         raw_fs=[]
                         for name,r in plot_data.items():
                             raw_fs.append(pd.DataFrame({f"{name}_Strain(%)":r["strain"],f"{name}_Stress(MPa)":r["stress"], f"{name}_TrueStrain(abs)":r["true_strain"],f"{name}_TrueStress(MPa)":r["true_stress"]}))
                         if raw_fs: pd.concat(raw_fs,axis=1).to_excel(w,sheet_name='Raw_Curves',index=False)
                         
+                        # 2. Hollomon Summary & Raw Data
                         pd.DataFrame([{"Sample":rr["Sample"],"n":rr["Hollomon n"],"K(MPa)":rr["Hollomon K [MPa]"],"R²":rr["Hollomon R²"]} for rr in all_results]).to_excel(w,sheet_name='Hollomon_Summary',index=False)
                         hol_raw_dfs = []
                         for name, r in plot_data.items():
@@ -822,17 +848,27 @@ if page == "🔬 Tensile Analysis":
                                     hol_raw_dfs.append(pd.DataFrame({f"{name}_ln(TrueStrain)": np.log(te_p[v]), f"{name}_ln(TrueStress)": np.log(ts_p[v])}))
                         if hol_raw_dfs: pd.concat(hol_raw_dfs, axis=1).to_excel(w, sheet_name='Hollomon_RawData', index=False)
 
+                        # 3. Secant Data
                         if 'sec_rows' in locals(): pd.DataFrame(sec_rows).to_excel(w, sheet_name='Secant_Data', index=False)
+                        
+                        # 4. Weibull Data
                         if 'wb_data' in locals() and wb_data: pd.DataFrame({"ln(UTS)": wb_data["x"], "ln(ln(1/(1-Pf)))": wb_data["y"]}).to_excel(w, sheet_name='Weibull_Data', index=False)
+                        
+                        # 5. Mean Curve Data
                         if 'mean_curve' in locals() and mean_curve: pd.DataFrame({"Strain(%)": mean_curve["strain"], "Mean_Stress(MPa)": mean_curve["mean"], "Upper_SD": mean_curve["upper"], "Lower_SD": mean_curve["lower"]}).to_excel(w, sheet_name='Mean_Curve_Data', index=False)
                         
+                        # ============================================================
+                        # PLOT EMBEDDING GENERATION
+                        # ============================================================
                         plt.rcParams.update({"font.family":"serif","font.size":10})
                         
+                        # A. Standard Journal Plot
                         ps=w.book.add_worksheet('Plot_Journal')
                         ps.write('A1','Engineering Stress-Strain Curve')
                         ie=io.BytesIO(); journal_fig.savefig(ie,format='png',dpi=200,bbox_inches='tight'); ie.seek(0)
                         ps.insert_image('A3','p1.png',{'image_data':ie})
                         
+                        # B. True Stress-Strain Plot
                         fig_t_exp, ax_t = plt.subplots(figsize=(7,5))
                         for name, r in plot_data.items(): ax_t.plot(r["true_strain"]*100, r["true_stress"], label=name, color=sample_colors.get(name,"#000"))
                         ax_t.set_xlabel("True Strain (%)"); ax_t.set_ylabel("True Stress (MPa)"); ax_t.legend(); fig_t_exp.tight_layout()
@@ -840,6 +876,7 @@ if page == "🔬 Tensile Analysis":
                         w.book.add_worksheet('Plot_TrueSS').insert_image('A1', 'p2.png', {'image_data': buf_t})
                         plt.close(fig_t_exp)
                         
+                        # C. Log-Log Hollomon Plot
                         fig_h_exp, ax_h = plt.subplots(figsize=(7,5))
                         for name, r in plot_data.items():
                             if not np.isnan(r["h_n"]):
@@ -855,6 +892,7 @@ if page == "🔬 Tensile Analysis":
                         w.book.add_worksheet('Plot_Hollomon').insert_image('A1', 'p3.png', {'image_data': buf_h})
                         plt.close(fig_h_exp)
                         
+                        # D. Secant Modulus Plot
                         fig_s_exp, ax_s = plt.subplots(figsize=(7,5))
                         for name, r in plot_data.items():
                             sx = sorted(r["secant"].keys()); sy = [r["secant"][k] for k in sx]
@@ -864,6 +902,7 @@ if page == "🔬 Tensile Analysis":
                         w.book.add_worksheet('Plot_Secant').insert_image('A1', 'p4.png', {'image_data': buf_s})
                         plt.close(fig_s_exp)
 
+                        # E. Weibull Plot
                         if 'wb_data' in locals() and wb_data:
                             fig_w_exp, ax_w = plt.subplots(figsize=(7,5))
                             ax_w.plot(wb_data["x"], wb_data["y"], 'o', color='#002244', ms=8)
@@ -873,6 +912,7 @@ if page == "🔬 Tensile Analysis":
                             w.book.add_worksheet('Plot_Weibull').insert_image('A1', 'p5.png', {'image_data': buf_w})
                             plt.close(fig_w_exp)
 
+                        # F. Mean Curve Plot
                         if 'mean_curve' in locals() and mean_curve:
                             fig_m_exp, ax_m = plt.subplots(figsize=(7,5))
                             ax_m.fill_between(mean_curve["strain"], mean_curve["lower"], mean_curve["upper"], alpha=0.2, color='#555')
@@ -883,7 +923,7 @@ if page == "🔬 Tensile Analysis":
                             w.book.add_worksheet('Plot_MeanCurve').insert_image('A1', 'p6.png', {'image_data': buf_m})
                             plt.close(fig_m_exp)
 
-                    st.download_button("📥 Download Excel Report",xl_buf.getvalue(), "Tensile_Report_v4-4.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
+                    st.download_button("📥 Download Excel Report",xl_buf.getvalue(), "Tensile_Report_v4-5.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
                 except Exception as e: st.error(f"Export error: {e}")
             with ec2:
                 st.markdown("**🖼️ 600 DPI Journal TIFF**")
@@ -1012,7 +1052,6 @@ else:
         fig_hm.update_layout(plot_bgcolor='#fff', paper_bgcolor='#fff', height=max(300, len(avail_props)*55+80), xaxis=dict(tickfont=dict(size=11), side='bottom'), yaxis=dict(tickfont=dict(size=11)), margin=dict(l=140,r=60,t=30,b=60))
         st.plotly_chart(fig_hm, use_container_width=True, config=JCFG)
         
-        # FIXED: Proper Rendering of the Retention Table
         if retention_table:
             st.markdown("---")
             st.dataframe(pd.DataFrame(retention_table), hide_index=True, use_container_width=True)
@@ -1040,26 +1079,12 @@ else:
                 
                 if ag_show_fit:
                     for mname, mres in fit_results.items():
-                        # FIXED: Proper predictive lines decoupled from messy inline lambdas
                         pred_ext = None
-                        if mname == "Linear":
-                            k_ = mres['params'].get('k (MPa/day)', 0)
-                            r0_ = mres['params'].get('R0', 100) # R0 was safely stored in the model engine above
-                            pred_ext = r0_ - k_ * t_ext2
-                        elif mname == "First-order":
-                            k_ = mres['params'].get('k (day⁻¹)', 0)
-                            pred_ext = 100.0 * np.exp(-k_ * t_ext2)
-                        elif mname == "Power-law":
-                            n_ = mres['params'].get('n (exponent)', 0)
-                            pred_ext = 100.0 * (1 + t_ext2)**(-n_)
-                        elif mname == "Two-phase Exp." and HAS_SCIPY:
-                            A_ = mres['params'].get('A (fast %)', 70)
-                            k1_ = mres['params'].get('k₁ (fast day⁻¹)', 0.05)
-                            k2_ = mres['params'].get('k₂ (slow day⁻¹)', 0.005)
-                            pred_ext = A_ * np.exp(-k1_ * t_ext2) + (100 - A_) * np.exp(-k2_ * t_ext2)
-                            
-                        if pred_ext is not None:
-                            fig_k.add_trace(go.Scatter(x=t_ext2, y=pred_ext, mode='lines', name=f"{mname} (R²={mres['r2']})", line=dict(color={"Linear":"#002244","First-order":"#c9a84c","Power-law":"#1e8449","Two-phase Exp.":"#7d3c98"}.get(mname,'#555'), width=2, dash='dot' if mname!="First-order" else 'solid')))
+                        if mname == "Linear": pred_ext = mres['params'].get('R0', 100) - mres['params'].get('k (MPa/day)', 0) * t_ext2
+                        elif mname == "First-order": pred_ext = 100.0 * np.exp(-mres['params'].get('k (day⁻¹)', 0) * t_ext2)
+                        elif mname == "Power-law": pred_ext = 100.0 * (1 + t_ext2)**(-mres['params'].get('n (exponent)', 0))
+                        elif mname == "Two-phase Exp." and HAS_SCIPY: pred_ext = mres['params'].get('A (fast %)', 70) * np.exp(-mres['params'].get('k₁ (fast day⁻¹)', 0.05) * t_ext2) + (100 - mres['params'].get('A (fast %)', 70)) * np.exp(-mres['params'].get('k₂ (slow day⁻¹)', 0.005) * t_ext2)
+                        if pred_ext is not None: fig_k.add_trace(go.Scatter(x=t_ext2, y=pred_ext, mode='lines', name=f"{mname} (R²={mres['r2']})", line=dict(color={"Linear":"#002244","First-order":"#c9a84c","Power-law":"#1e8449","Two-phase Exp.":"#7d3c98"}.get(mname,'#555'), width=2, dash='dot' if mname!="First-order" else 'solid')))
 
                 fig_k.update_layout(title=dict(text=f"<b>{lbl}</b>",font=dict(size=14,color='#002244'),x=0.01), plot_bgcolor='#fff', paper_bgcolor='#fff', height=430, xaxis=dict(title="<b>Ageing Time (days)</b>", range=[0, max(avail_days)*1.65], tickvals=avail_days, **AXIS), yaxis=dict(title=f"<b>Retention of {AGEING_PROP_LABELS[kin_prop]} (%)</b>", range=[0,110], **AXIS), margin=dict(l=65,r=40,t=45,b=60))
                 st.plotly_chart(fig_k, use_container_width=True, config=JCFG)
@@ -1097,7 +1122,6 @@ else:
                 fig_hh.update_layout(plot_bgcolor='#fff',paper_bgcolor='#fff',height=430)
                 st.plotly_chart(fig_hh, use_container_width=True, config=JCFG)
 
-    # FIXED: Fully restored Tab 4 (Radar Chart)
     with ag_tabs[4]:
         section_hdr("Multi-Property Radar Chart (Retention %)","🕸️","#1a003a")
         rad_forms = st.multiselect("Formulations", formulations, default=formulations[:2], key="rdf")
@@ -1132,7 +1156,6 @@ else:
         fig_rad.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0,120], tickfont=dict(size=10,family="IBM Plex Mono"), ticksuffix="%", gridcolor='#e0e0e0'), angularaxis=dict(tickfont=dict(size=12,family="IBM Plex Sans",color='#002244'))), showlegend=True, legend=dict(font=dict(family="Times New Roman",size=11)), paper_bgcolor='#fff', height=580, margin=dict(l=60,r=60,t=40,b=40))
         st.plotly_chart(fig_rad, use_container_width=True, config=JCFG)
 
-    # FIXED: Fully restored Tab 5 (Service Life Prediction)
     with ag_tabs[5]:
         section_hdr("Service Life Prediction & Extrapolation","⏱️","#1a1a3a")
         sl_prop  = st.selectbox("Property", avail_props, format_func=lambda k: f"{AGEING_PROP_LABELS[k]} ({AGEING_PROP_UNITS[k]})", key="slp")
@@ -1160,7 +1183,6 @@ else:
 
                 fig_sl.add_trace(go.Scatter(x=list(vd),y=list(vr),mode='markers', name=f"{lbl} (data)",showlegend=True, marker=dict(symbol=mark,size=10,color=col,line=dict(width=2,color='#fff'))))
                 
-                # Calculation for Extrapolation
                 pred_sl = np.clip(mres["pred"][:len(t_sl)] if len(mres["pred"])>=len(t_sl) else np.interp(t_sl, np.linspace(0,max(avail_days),len(mres["pred"])), mres["pred"]), 0, 110)
                 kp = mres["params"]
                 if sl_model == "First-order": pred_sl = 100.0*np.exp(-kp.get('k (day⁻¹)',0)*t_sl)
@@ -1182,7 +1204,6 @@ else:
         st.plotly_chart(fig_sl, use_container_width=True, config=JCFG)
         if sl_table: st.dataframe(pd.DataFrame(sl_table), hide_index=True, use_container_width=True)
 
-    # FIXED: Fully restored Tab 6 (Statistics & ANOVA)
     with ag_tabs[6]:
         section_hdr("Batch Statistics & One-Way ANOVA","📊","#1a1a00")
         stat_prop = st.selectbox("Property", avail_props, format_func=lambda k: f"{AGEING_PROP_LABELS[k]} ({AGEING_PROP_UNITS[k]})", key="sp")
@@ -1224,7 +1245,6 @@ else:
                 dsi_rows.append({"Formulation":form,"Condition":cond, "DSI (%)":f"{dsi:.1f}" if not np.isnan(dsi) else "—", "Assessment":("🟢 Excellent" if dsi>=95 else "🟡 Moderate" if dsi>=85 else "🟠 Significant" if dsi>=75 else "🔴 Severe")})
         if dsi_rows: st.dataframe(pd.DataFrame(dsi_rows),hide_index=True,use_container_width=True)
 
-    # FIXED: Fully restored Tab 7 (Arrhenius Analysis)
     with ag_tabs[7]:
         section_hdr("Arrhenius Activation Energy Estimation","🌡️","#3a0000")
         if not use_arrhenius:
@@ -1240,7 +1260,7 @@ else:
                 arr_prop = st.selectbox("Property for Arrhenius", avail_props, format_func=lambda k: f"{AGEING_PROP_LABELS[k]} ({AGEING_PROP_UNITS[k]})", key="ap")
                 arr_model= st.selectbox("Kinetic Model", ["First-order","Power-law","Linear"], key="am")
                 arr_form = st.selectbox("Formulation",formulations,key="af")
-                R_gas = 8.314e-3  # kJ/(mol·K)
+                R_gas = 8.314e-3
                 arr_rows = []
                 for temp_C, cond in zip(arr_temps, ov_cs[:len(arr_temps)]):
                     days_,ret_ = get_retention(ag_df, arr_form, cond, arr_prop)
@@ -1271,7 +1291,6 @@ else:
                         st.plotly_chart(fig_arr,use_container_width=True,config=JCFG)
                     except Exception as e: st.error(f"Arrhenius fit failed: {e}")
 
-    # FIXED: Fully restored Tab 8 (Comprehensive Ageing Export)
     with ag_tabs[8]:
         section_hdr("Ageing Report Export","💾","#002244")
         st.markdown("**📊 Full Ageing Excel Report**")
@@ -1281,12 +1300,10 @@ else:
                 wb_xl = w.book
                 hdr_fmt = wb_xl.add_format({'bold':True,'bg_color':'#002244','font_color':'#f0f4fb','border':1,'align':'center'})
                 
-                # Raw data
                 ag_df.to_excel(w, sheet_name='Raw_Ageing_Data', index=False)
                 ws0=w.sheets['Raw_Ageing_Data']
                 for i,col in enumerate(ag_df.columns): ws0.write(0,i,str(col),hdr_fmt)
 
-                # Retention matrix per property
                 for prop_k in avail_props:
                     ret_mat = []
                     for form in formulations:
@@ -1298,7 +1315,6 @@ else:
                             ret_mat.append(row_r)
                     if ret_mat: pd.DataFrame(ret_mat).to_excel(w,sheet_name=f"Ret_{AGEING_PROP_LABELS[prop_k][:12].replace(' ','_')}",index=False)
 
-                # Kinetics
                 kin_all=[]
                 for prop_k in avail_props:
                     for form in formulations:
@@ -1316,7 +1332,6 @@ else:
                                 kin_all.append(r)
                 if kin_all: pd.DataFrame(kin_all).to_excel(w,sheet_name='Kinetics',index=False)
 
-                # DSI
                 dsi_all=[{"Formulation":f,"Condition":c,"DSI (%)":compute_dsi(ag_df,f,c)} for f in formulations for c in conditions]
                 pd.DataFrame(dsi_all).to_excel(w,sheet_name='DSI',index=False)
 
