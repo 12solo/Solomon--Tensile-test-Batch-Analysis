@@ -1,8 +1,8 @@
 """
-Solomon Tensile Master Pro v4.6
+Solomon Tensile Master Pro v4.7
 ─────────────────────────────────────────────────────────────────────────────
 Integrated platform:
-  Page 1 — Tensile Analysis      (Rock-solid parsing + 50% Yield Slider)
+  Page 1 — Tensile Analysis      (Anti-Scribble Sorting + CSS Dropdown Fix)
   Page 2 — Ageing Trend Analysis (Fully restored Analytics & Export Engine)
 ─────────────────────────────────────────────────────────────────────────────
 """
@@ -37,7 +37,7 @@ except ImportError:
 # PAGE CONFIG & CSS
 # ═══════════════════════════════════════════════════════════════════════════
 st.set_page_config(
-    page_title="Tensile Master Pro 4.6 | Solomon Scientific",
+    page_title="Tensile Master Pro 4.7 | Solomon Scientific",
     page_icon="LOGO.png",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -83,21 +83,19 @@ input[type="number"] { -moz-appearance:textfield; }
 [data-testid="stFileUploadDropzone"] { background:var(--white) !important; border:1.5px dashed var(--border) !important; border-radius:3px !important; }
 [data-testid="stFileUploadDropzone"]:hover { border-color:var(--gold) !important; }
 
-/* ── Bulletproof Dropdown Visibility Fix ── */
-[data-baseweb="popover"], [data-baseweb="popover"] > div, [data-baseweb="menu"] {
+/* ── ULTIMATE DROPDOWN VISIBILITY FIX ── */
+[data-baseweb="popover"], div[role="listbox"], ul[data-baseweb="menu"] {
     background-color: #ffffff !important;
 }
-[data-baseweb="menu"] li, [data-baseweb="menu"] li span, [data-baseweb="menu"] li div {
-    color: #0f1923 !important;
-    background-color: #ffffff !important;
-}
-[data-baseweb="menu"] li:hover, [data-baseweb="menu"] li:hover span, [data-baseweb="menu"] li:hover div {
-    background-color: #f7f9fc !important;
-    color: #c9a84c !important;
-}
-span[data-baseweb="tag"] {
-    background-color: #dde3ec !important;
+[data-baseweb="menu"] li, [data-baseweb="menu"] li *, div[role="option"], div[role="option"] * {
     color: #002244 !important;
+    background-color: transparent !important;
+}
+[data-baseweb="menu"] li:hover, div[role="option"]:hover, div[role="option"]:focus {
+    background-color: #f7f9fc !important;
+}
+[data-baseweb="menu"] li:hover *, div[role="option"]:hover * {
+    color: #c9a84c !important;
 }
 
 .stButton>button {
@@ -172,7 +170,7 @@ def render_header(page_label=""):
     st.markdown(f"""
     <div style="display:flex;align-items:center;justify-content:space-between;padding:1.2rem 2rem;background:#002244;border-radius:4px;margin-bottom:1.25rem;">
       <div style="display:flex;align-items:center;gap:1.2rem;">{icon}
-        <div><div style="font-family:'Playfair Display',Georgia,serif;font-size:1.6rem;font-weight:700;color:#f0f4fb;line-height:1.1;">Solomon Tensile Master Pro<span style="color:#c9a84c;"> 4.6</span>{badge}</div>
+        <div><div style="font-family:'Playfair Display',Georgia,serif;font-size:1.6rem;font-weight:700;color:#f0f4fb;line-height:1.1;">Solomon Tensile Master Pro<span style="color:#c9a84c;"> 4.7</span>{badge}</div>
         <div style="font-family:'IBM Plex Sans',sans-serif;font-size:0.66rem;color:#a8b4c8;letter-spacing:0.18em;text-transform:uppercase;margin-top:3px;">Advanced Mechanical &amp; Ageing Analysis Framework &nbsp;·&nbsp; Solomon Scientific</div></div>
       </div>
     </div>""", unsafe_allow_html=True)
@@ -183,7 +181,7 @@ def render_sidebar_brand():
     st.markdown(f"""
     <div style="padding:0.75rem 0 0.3rem;text-align:center;">{icon}
       <div style="font-family:'IBM Plex Sans',sans-serif;font-size:0.58rem;color:#9c7a32;letter-spacing:0.2em;text-transform:uppercase;font-weight:700;">Solomon Scientific</div>
-      <div style="font-family:'Playfair Display',Georgia,serif;font-size:0.9rem;font-weight:700;color:#002244;">Master Pro <span style="color:#c9a84c;">4.6</span></div>
+      <div style="font-family:'Playfair Display',Georgia,serif;font-size:0.9rem;font-weight:700;color:#002244;">Master Pro <span style="color:#c9a84c;">4.7</span></div>
     </div>""", unsafe_allow_html=True)
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -532,7 +530,7 @@ with st.sidebar:
         if use_arrhenius:
             arr_temps_str = st.text_input("Oven Temperatures (°C, comma-separated)", "60, 70, 80")
 
-    st.markdown("""<div style="padding:0.6rem 0 0.3rem;text-align:center;font-family:'IBM Plex Sans',sans-serif;font-size:0.6rem;color:#7f8c8d;letter-spacing:0.1em;">Research & Academic Use Only · v4.6</div>""", unsafe_allow_html=True)
+    st.markdown("""<div style="padding:0.6rem 0 0.3rem;text-align:center;font-family:'IBM Plex Sans',sans-serif;font-size:0.6rem;color:#7f8c8d;letter-spacing:0.1em;">Research & Academic Use Only · v4.7</div>""", unsafe_allow_html=True)
 
 # ═══════════════════════════════════════════════════════════════════════════
 # PAGE 1 — TENSILE ANALYSIS
@@ -637,8 +635,14 @@ if page == "🔬 Tensile Analysis":
                 yield_method = r2[1].select_slider("Yield Method", options=["0.2% Offset Method","Departure from Linearity"], value=current_ym_val, key=f"meth_{file.name}_sl")
                 yield_val = r2[2].slider("Offset/Sensitivity (%)",0.01,50.0, st.session_state.get(f"val_{file.name}_sl", bulk_v), 0.01, key=f"val_{file.name}_sl")
 
-                df_c = df_raw[[f_col,d_col]].apply(pd.to_numeric,errors='coerce').dropna()
-                if df_c.empty: st.error("No numeric data."); continue
+                # FIXED: Ensure European commas are read as decimals, then sort data strictly by strain to prevent plotting backwards (scribble effect)
+                df_c = df_raw[[f_col,d_col]].copy()
+                df_c[f_col] = df_c[f_col].astype(str).str.replace(',', '.', regex=False)
+                df_c[d_col] = df_c[d_col].astype(str).str.replace(',', '.', regex=False)
+                df_c = df_c.apply(pd.to_numeric,errors='coerce').dropna()
+                df_c = df_c.sort_values(by=d_col).reset_index(drop=True)
+                
+                if df_c.empty: st.error("No numeric data found. Check separators."); continue
                 
                 if "Digitized" in str(file.name):
                     stress_raw_arr = df_c[f_col].values; strain_raw_arr = df_c[d_col].values
@@ -919,7 +923,7 @@ if page == "🔬 Tensile Analysis":
                             w.book.add_worksheet('Plot_MeanCurve').insert_image('A1', 'p6.png', {'image_data': buf_m})
                             plt.close(fig_m_exp)
 
-                    st.download_button("📥 Download Excel Report",xl_buf.getvalue(), "Tensile_Report_v4-6.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
+                    st.download_button("📥 Download Excel Report",xl_buf.getvalue(), "Tensile_Report_v4-7.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
                 except Exception as e: st.error(f"Export error: {e}")
             with ec2:
                 st.markdown("**🖼️ 600 DPI Journal TIFF**")
